@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate mockgen -destination internal/mock_gomock/mock_matcher.go github.com/guzenok/go-sqltest/gomock Matcher
+//go:generate sqlmockgen -destination internal/mock_gomock/mock_matcher.go github.com/guzenok/go-sqltest/gomock Matcher
 
 package gomock_test
 

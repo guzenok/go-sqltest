@@ -9,10 +9,10 @@ Installation
 ------------
 
 Once you have [installed Go][golang-install], run these commands
-to install the `gomock` package and the `mockgen` tool:
+to install the `gomock` package and the `sqlmockgen` tool:
 
     go get github.com/guzenok/go-sqltest/gomock
-    go install github.com/guzenok/go-sqltest/mockgen
+    go install github.com/guzenok/go-sqltest/sqlmockgen
 
 
 Documentation
@@ -26,17 +26,17 @@ Alternatively, there is an online reference for the package hosted on GoPkgDoc
 [here][gomock-ref].
 
 
-Running mockgen
+Running sqlmockgen
 ---------------
 
-`mockgen` has two modes of operation: source and reflect.
+`sqlmockgen` has two modes of operation: source and reflect.
 Source mode generates mock interfaces from a source file.
 It is enabled by using the -source flag. Other flags that
 may be useful in this mode are -imports and -aux_files.
 
 Example:
 
-	mockgen -source=foo.go [other options]
+	sqlmockgen -source=foo.go [other options]
 
 Reflect mode generates mock interfaces by building a program
 that uses reflection to understand interfaces. It is enabled
@@ -45,9 +45,9 @@ comma-separated list of symbols.
 
 Example:
 
-	mockgen database/sql/driver Conn,Driver
+	sqlmockgen database/sql/driver Conn,Driver
 
-The `mockgen` command is used to generate source code for a mock
+The `sqlmockgen` command is used to generate source code for a mock
 class given a Go source file containing interfaces to be mocked.
 It supports the following flags:
 
@@ -83,7 +83,7 @@ It supports the following flags:
 
 * `-copyright_file`: Copyright file used to add copyright header to the resulting source code.
 
-For an example of the use of `mockgen`, see the `sample/` directory. In simple
+For an example of the use of `sqlmockgen`, see the `sample/` directory. In simple
 cases, you will need only the `-source` flag.
 
 

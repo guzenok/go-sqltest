@@ -9,7 +9,7 @@ env:
 
 script:
   - go build ./...
-  - go install github.com/guzenok/go-sqltest/mockgen
+  - go install github.com/guzenok/go-sqltest/sqlmockgen
   - ./ci/check_go_fmt.sh
   - ./ci/check_go_generate.sh
   - ./ci/check_go_mod.sh

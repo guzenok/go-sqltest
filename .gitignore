@@ -10,8 +10,8 @@
 # Vim temporary files.
 .*.swp
 
-# The mockgen binary.
-mockgen/mockgen
+# The sqlmockgen binary.
+sqlmockgen/sqlmockgen
 
 # A binary produced by gotest.
 #gomock/[568]\.out

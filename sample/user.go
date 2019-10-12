@@ -1,9 +1,9 @@
-//go:generate mockgen -destination mock_user/mock_user.go github.com/guzenok/go-sqltest/sample Index,Embed,Embedded
+//go:generate sqlmockgen -destination mock_user/mock_user.go github.com/guzenok/go-sqltest/sample Index,Embed,Embedded
 
 // An example package with an interface.
 package user
 
-// Random bunch of imports to test mockgen.
+// Random bunch of imports to test sqlmockgen.
 import "io"
 import (
 	btz "bytes"
@@ -25,7 +25,7 @@ import (
 	"github.com/guzenok/go-sqltest/sample/imp4" // calls itself "imp_four"
 )
 
-// A bizarre interface to test corner cases in mockgen.
+// A bizarre interface to test corner cases in sqlmockgen.
 // This would normally be in its own file or package,
 // separate from the user of it (e.g. io.Reader).
 type Index interface {

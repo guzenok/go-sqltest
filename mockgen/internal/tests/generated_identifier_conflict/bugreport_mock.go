@@ -5,7 +5,7 @@
 package bugreport
 
 import (
-	gomock "github.com/golang/mock/gomock"
+	gomock "github.com/guzenok/go-sqltest/gomock"
 	reflect "reflect"
 )
 

@@ -30,7 +30,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/mock/mockgen/model"
+	"github.com/guzenok/go-sqltest/mockgen/model"
 	"golang.org/x/tools/go/packages"
 )
 

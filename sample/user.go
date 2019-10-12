@@ -1,4 +1,4 @@
-//go:generate mockgen -destination mock_user/mock_user.go github.com/golang/mock/sample Index,Embed,Embedded
+//go:generate mockgen -destination mock_user/mock_user.go github.com/guzenok/go-sqltest/sample Index,Embed,Embedded
 
 // An example package with an interface.
 package user
@@ -19,10 +19,10 @@ import (
 
 // Dependencies outside the standard library.
 import (
-	"github.com/golang/mock/sample/imp1"
-	renamed2 "github.com/golang/mock/sample/imp2"
-	. "github.com/golang/mock/sample/imp3"
-	"github.com/golang/mock/sample/imp4" // calls itself "imp_four"
+	"github.com/guzenok/go-sqltest/sample/imp1"
+	renamed2 "github.com/guzenok/go-sqltest/sample/imp2"
+	. "github.com/guzenok/go-sqltest/sample/imp3"
+	"github.com/guzenok/go-sqltest/sample/imp4" // calls itself "imp_four"
 )
 
 // A bizarre interface to test corner cases in mockgen.

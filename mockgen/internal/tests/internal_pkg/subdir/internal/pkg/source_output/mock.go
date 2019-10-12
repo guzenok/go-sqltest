@@ -5,8 +5,8 @@
 package mock_pkg
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	pkg "github.com/golang/mock/mockgen/internal/tests/internal_pkg/subdir/internal/pkg"
+	gomock "github.com/guzenok/go-sqltest/gomock"
+	pkg "github.com/guzenok/go-sqltest/mockgen/internal/tests/internal_pkg/subdir/internal/pkg"
 	reflect "reflect"
 )
 

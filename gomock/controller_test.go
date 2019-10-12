@@ -21,7 +21,7 @@ import (
 
 	"strings"
 
-	"github.com/golang/mock/gomock"
+	"github.com/guzenok/go-sqltest/gomock"
 )
 
 type ErrorReporter struct {

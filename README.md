@@ -1,9 +1,8 @@
-gomock [![Build Status][travis-ci-badge]][travis-ci] [![GoDoc][godoc-badge]][godoc]
+sqltest [![Build Status][travis-ci-badge]][travis-ci] [![GoDoc][godoc-badge]][godoc]
 ======
 
-GoMock is a mocking framework for the [Go programming language][golang]. It
-integrates well with Go's built-in `testing` package, but can be used in other
-contexts too.
+SqlTest is a test code generator for the [Go programming language][golang].
+It records real DB interactions as go-sqlmock to use for tests.
 
 
 Installation
@@ -12,8 +11,8 @@ Installation
 Once you have [installed Go][golang-install], run these commands
 to install the `gomock` package and the `mockgen` tool:
 
-    go get github.com/golang/mock/gomock
-    go install github.com/golang/mock/mockgen
+    go get github.com/guzenok/go-sqltest/gomock
+    go install github.com/guzenok/go-sqltest/mockgen
 
 
 Documentation
@@ -21,7 +20,7 @@ Documentation
 
 After installing, you can use `go doc` to get documentation:
 
-    go doc github.com/golang/mock/gomock
+    go doc github.com/guzenok/go-sqltest/gomock
 
 Alternatively, there is an online reference for the package hosted on GoPkgDoc
 [here][gomock-ref].
@@ -163,8 +162,8 @@ func TestFoo(t *testing.T) {
 
 [golang]:          http://golang.org/
 [golang-install]:  http://golang.org/doc/install.html#releases
-[gomock-ref]:      http://godoc.org/github.com/golang/mock/gomock
+[gomock-ref]:      http://godoc.org/github.com/guzenok/go-sqltest/gomock
 [travis-ci-badge]: https://travis-ci.org/golang/mock.svg?branch=master
 [travis-ci]:       https://travis-ci.org/golang/mock
-[godoc-badge]:     https://godoc.org/github.com/golang/mock/gomock?status.svg
-[godoc]:           https://godoc.org/github.com/golang/mock/gomock
+[godoc-badge]:     https://godoc.org/github.com/guzenok/go-sqltest/gomock?status.svg
+[godoc]:           https://godoc.org/github.com/guzenok/go-sqltest/gomock

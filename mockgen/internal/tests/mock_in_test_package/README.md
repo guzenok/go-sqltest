@@ -4,13 +4,13 @@ Prior to patch:
 
     $ go generate
     $ go test
-    # github.com/golang/mock/mockgen/internal/tests/mock_in_test_package_test [github.com/golang/mock/mockgen/internal/tests/mock_in_test_package.test]
+    # github.com/guzenok/go-sqltest/mockgen/internal/tests/mock_in_test_package_test [github.com/guzenok/go-sqltest/mockgen/internal/tests/mock_in_test_package.test]
     ./mock_test.go:36:44: undefined: User
     ./mock_test.go:38:21: undefined: User
-    FAIL	github.com/golang/mock/mockgen/internal/tests/mock_in_test_package [build failed]
+    FAIL	github.com/guzenok/go-sqltest/mockgen/internal/tests/mock_in_test_package [build failed]
 
 With this patch applied:
 
     $ go generate
     $ go test
-    ok  	github.com/golang/mock/mockgen/internal/tests/mock_in_test_package	0.031s
+    ok  	github.com/guzenok/go-sqltest/mockgen/internal/tests/mock_in_test_package	0.031s

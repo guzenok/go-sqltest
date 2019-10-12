@@ -36,11 +36,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/golang/mock/mockgen/model"
+	"github.com/guzenok/go-sqltest/mockgen/model"
 )
 
 const (
-	gomockImportPath = "github.com/golang/mock/gomock"
+	gomockImportPath = "github.com/guzenok/go-sqltest/gomock"
 )
 
 var (

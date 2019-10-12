@@ -5,8 +5,8 @@
 package bugreport
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	faux "github.com/golang/mock/mockgen/internal/tests/aux_imports_embedded_interface/faux"
+	gomock "github.com/guzenok/go-sqltest/gomock"
+	faux "github.com/guzenok/go-sqltest/mockgen/internal/tests/aux_imports_embedded_interface/faux"
 	reflect "reflect"
 )
 

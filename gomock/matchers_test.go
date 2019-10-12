@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate mockgen -destination internal/mock_gomock/mock_matcher.go github.com/golang/mock/gomock Matcher
+//go:generate mockgen -destination internal/mock_gomock/mock_matcher.go github.com/guzenok/go-sqltest/gomock Matcher
 
 package gomock_test
 
@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"github.com/golang/mock/gomock/internal/mock_gomock"
+	"github.com/guzenok/go-sqltest/gomock"
+	"github.com/guzenok/go-sqltest/gomock/internal/mock_gomock"
 )
 
 func TestMatchers(t *testing.T) {

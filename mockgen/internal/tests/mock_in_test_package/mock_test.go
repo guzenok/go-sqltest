@@ -5,8 +5,8 @@
 package users_test
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	mock_in_test_package "github.com/golang/mock/mockgen/internal/tests/mock_in_test_package"
+	gomock "github.com/guzenok/go-sqltest/gomock"
+	mock_in_test_package "github.com/guzenok/go-sqltest/mockgen/internal/tests/mock_in_test_package"
 	reflect "reflect"
 )
 

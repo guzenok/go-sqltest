@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"context"
-	"github.com/golang/mock/gomock"
+	"github.com/guzenok/go-sqltest/gomock"
 
-	mock "github.com/golang/mock/sample/concurrent/mock"
+	mock "github.com/guzenok/go-sqltest/sample/concurrent/mock"
 )
 
 func call(ctx context.Context, m Math) (int, error) {

@@ -1,1 +1,1 @@
-Test for [Issue#4](https://github.com/golang/mock/issues/4).
+Test for [Issue#4](https://github.com/guzenok/go-sqltest/issues/4).

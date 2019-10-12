@@ -7,7 +7,7 @@ package dot_imports
 import (
 	bytes "bytes"
 	. "context"
-	gomock "github.com/golang/mock/gomock"
+	gomock "github.com/guzenok/go-sqltest/gomock"
 	. "net/http"
 	reflect "reflect"
 )

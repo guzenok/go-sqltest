@@ -24,13 +24,48 @@ var (
 	buildFlags = flag.String("build_flags", "", "(reflect mode) Additional flags for go build.")
 )
 
+func reflect(importPath string, symbols []string) (*model.Package, error) {
+	// TODO: sanity check arguments
+
+	if *execOnly != "" {
+		return run(*execOnly)
+	}
+
+	program, err := writeProgram(importPath, symbols)
+	if err != nil {
+		return nil, err
+	}
+
+	if *progOnly {
+		os.Stdout.Write(program)
+		os.Exit(0)
+	}
+
+	wd, _ := os.Getwd()
+
+	// Try to run the program in the same directory as the input package.
+	if p, err := build.Import(importPath, wd, build.FindOnly); err == nil {
+		dir := p.Dir
+		if p, err := runInDir(program, dir); err == nil {
+			return p, nil
+		}
+	}
+
+	// Since that didn't work, try to run it in the current working directory.
+	if p, err := runInDir(program, wd); err == nil {
+		return p, nil
+	}
+	// Since that didn't work, try to run it in a standard temp directory.
+	return runInDir(program, "")
+}
+
 func writeProgram(importPath string, symbols []string) ([]byte, error) {
 	var program bytes.Buffer
 	data := reflectData{
 		ImportPath: importPath,
 		Symbols:    symbols,
 	}
-	if err := reflectProgram.Execute(&program, &data); err != nil {
+	if err := generatorProgram.Execute(&program, &data); err != nil {
 		return nil, err
 	}
 	return program.Bytes(), nil
@@ -117,50 +152,14 @@ func runInDir(program []byte, dir string) (*model.Package, error) {
 	return run(filepath.Join(tmpDir, progBinary))
 }
 
-func reflect(importPath string, symbols []string) (*model.Package, error) {
-	// TODO: sanity check arguments
-
-	if *execOnly != "" {
-		return run(*execOnly)
-	}
-
-	program, err := writeProgram(importPath, symbols)
-	if err != nil {
-		return nil, err
-	}
-
-	if *progOnly {
-		os.Stdout.Write(program)
-		os.Exit(0)
-	}
-
-	wd, _ := os.Getwd()
-
-	// Try to run the program in the same directory as the input package.
-	if p, err := build.Import(importPath, wd, build.FindOnly); err == nil {
-		dir := p.Dir
-		if p, err := runInDir(program, dir); err == nil {
-			return p, nil
-		}
-	}
-
-	// Since that didn't work, try to run it in the current working directory.
-	if p, err := runInDir(program, wd); err == nil {
-		return p, nil
-	}
-	// Since that didn't work, try to run it in a standard temp directory.
-	return runInDir(program, "")
-}
-
 type reflectData struct {
 	ImportPath string
 	Symbols    []string
 }
 
-// This program reflects on an interface value, and prints the
-// gob encoding of a model.Package to standard output.
-// JSON doesn't work because of the model.Type interface.
-var reflectProgram = template.Must(template.New("program").Parse(`
+// This program imports specialized functions and runs generator.
+var generatorProgram = template.Must(
+	template.New("program").Parse(`
 package main
 
 import (

@@ -1,36 +1,42 @@
 package model
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestImpPath(t *testing.T) {
-	nonVendor := "github.com/foo/bar"
-	if nonVendor != impPath(nonVendor) {
-		t.Errorf("")
+// pkgPath is the importable path for package model
+const thisPkgPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
 
+func TestBuild(t *testing.T) {
+	assert := assert.New(t)
+
+	expect := &Package{
+		Name: "model",
+		Data: map[string]struct{}{
+			"InitDataExample1": struct{}{},
+		},
+		Sqls: map[string]struct{}{
+			"SqlsDictExample1": struct{}{},
+		},
 	}
-	testCases := []struct {
-		input string
-		want  string
-	}{
-		{"foo/bar", "foo/bar"},
-		{"vendor/foo/bar", "foo/bar"},
-		{"vendor/foo/vendor/bar", "bar"},
-		{"/vendor/foo/bar", "foo/bar"},
-		{"qux/vendor/foo/bar", "foo/bar"},
-		{"qux/vendor/foo/vendor/bar", "bar"},
-		{"govendor/foo", "govendor/foo"},
-		{"foo/govendor/bar", "foo/govendor/bar"},
-		{"vendors/foo", "vendors/foo"},
-		{"foo/vendors/bar", "foo/vendors/bar"},
+
+	got, err := Build(thisPkgPath)
+	if !assert.NoError(err) {
+		return
 	}
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("input %s", tc.input), func(t *testing.T) {
-			if got := impPath(tc.input); got != tc.want {
-				t.Errorf("got %s; want %s", got, tc.want)
-			}
-		})
-	}
+
+	expect.SrcDir = got.SrcDir
+	assert.EqualValues(expect, got)
+}
+
+// InitDataExample1 is for importer test.
+func InitDataExample1(x string, y string) error {
+	return nil
+}
+
+// SqlsDictExample1 is for importer test.
+func SqlsDictExample1() ([]string, error) {
+	return nil, nil
 }

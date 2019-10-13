@@ -1,6 +1,7 @@
 package model
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +12,17 @@ const thisPkgPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
 
 func TestBuild(t *testing.T) {
 	assert := assert.New(t)
+
+	_, err := AvoidTesting(thisPkgPath)
+	defer func() {
+		err := RestoreTesting(thisPkgPath)
+		if err != nil {
+			log.Printf("failed to remove *"+tempfile+" files: %s", err)
+		}
+	}()
+	if err != nil {
+		return
+	}
 
 	expect := &Package{
 		Name: "model",
@@ -27,7 +39,6 @@ func TestBuild(t *testing.T) {
 		return
 	}
 
-	expect.SrcDir = got.SrcDir
 	assert.EqualValues(expect, got)
 }
 

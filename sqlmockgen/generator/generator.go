@@ -24,9 +24,9 @@ func WriteCode(
 	inits InitDataFunctions,
 	sqls SqlsDictFunctions,
 	out io.Writer,
-) {
+) error {
 	fmt.Fprintf(out, "Hello World!")
-
+	return nil
 }
 
 type generator struct {

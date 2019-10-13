@@ -4,9 +4,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/gob"
 	"flag"
-	"go/build"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,26 +12,19 @@ import (
 	"path/filepath"
 	"runtime"
 	"text/template"
-
-	"github.com/guzenok/go-sqltest/sqlmockgen/model"
 )
 
 var (
-	progOnly   = flag.Bool("prog_only", false, "(reflect mode) Only generate the reflection program; write it to stdout and exit.")
-	execOnly   = flag.String("exec_only", "", "(reflect mode) If set, execute this reflection program.")
-	buildFlags = flag.String("build_flags", "", "(reflect mode) Additional flags for go build.")
+	progOnly   = flag.Bool("prog_only", false, "Only make the generation program; write it to stdout and exit.")
+	buildFlags = flag.String("build_flags", "", "Additional flags for go build.")
 )
 
-func reflect(importPath string, symbols []string) (*model.Package, error) {
+func reflect(descr *Descr, destination string) error {
 	// TODO: sanity check arguments
 
-	if *execOnly != "" {
-		return run(*execOnly)
-	}
-
-	program, err := writeProgram(importPath, symbols)
+	program, err := writeProgram(descr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if *progOnly {
@@ -41,82 +32,35 @@ func reflect(importPath string, symbols []string) (*model.Package, error) {
 		os.Exit(0)
 	}
 
-	wd, _ := os.Getwd()
-
 	// Try to run the program in the same directory as the input package.
-	if p, err := build.Import(importPath, wd, build.FindOnly); err == nil {
-		dir := p.Dir
-		if p, err := runInDir(program, dir); err == nil {
-			return p, nil
-		}
+	if err := runInDir(program, descr.Pkg.SrcDir, destination); err == nil {
+		return nil
 	}
-
 	// Since that didn't work, try to run it in the current working directory.
-	if p, err := runInDir(program, wd); err == nil {
-		return p, nil
+	wd, _ := os.Getwd()
+	if err := runInDir(program, wd, destination); err == nil {
+		return nil
 	}
 	// Since that didn't work, try to run it in a standard temp directory.
-	return runInDir(program, "")
+	return runInDir(program, "", destination)
 }
 
-func writeProgram(importPath string, symbols []string) ([]byte, error) {
-	var program bytes.Buffer
-	data := reflectData{
-		ImportPath: importPath,
-		Symbols:    symbols,
-	}
-	if err := generatorProgram.Execute(&program, &data); err != nil {
+func writeProgram(descr *Descr) ([]byte, error) {
+	program := new(bytes.Buffer)
+
+	if err := generatorProgram.Execute(program, descr); err != nil {
 		return nil, err
 	}
 	return program.Bytes(), nil
 }
 
-// run the given program and parse the output as a model.Package.
-func run(program string) (*model.Package, error) {
-	f, err := ioutil.TempFile("", "")
-	if err != nil {
-		return nil, err
-	}
-
-	filename := f.Name()
-	defer os.Remove(filename)
-	if err := f.Close(); err != nil {
-		return nil, err
-	}
-
-	// Run the program.
-	cmd := exec.Command(program, "-output", filename)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return nil, err
-	}
-
-	f, err = os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	// Process output.
-	var pkg model.Package
-	if err := gob.NewDecoder(f).Decode(&pkg); err != nil {
-		return nil, err
-	}
-
-	if err := f.Close(); err != nil {
-		return nil, err
-	}
-
-	return &pkg, nil
-}
-
-// runInDir writes the given program into the given dir, runs it there, and
-// parses the output as a model.Package.
-func runInDir(program []byte, dir string) (*model.Package, error) {
+// runInDir writes the given program into the given dir, and runs it there
+// with "-output filename" args.
+func runInDir(program []byte, dir, output string) error {
 	// We use TempDir instead of TempFile so we can control the filename.
-	tmpDir, err := ioutil.TempDir(dir, "gomock_reflect_")
+	tmpDir, err := ioutil.TempDir(dir, "sqlmock_gen_")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() {
 		if err := os.RemoveAll(tmpDir); err != nil {
@@ -131,7 +75,7 @@ func runInDir(program []byte, dir string) (*model.Package, error) {
 	}
 
 	if err := ioutil.WriteFile(filepath.Join(tmpDir, progSource), program, 0600); err != nil {
-		return nil, err
+		return err
 	}
 
 	cmdArgs := []string{}
@@ -147,82 +91,24 @@ func runInDir(program []byte, dir string) (*model.Package, error) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return err
 	}
-	return run(filepath.Join(tmpDir, progBinary))
+
+	return run(filepath.Join(tmpDir, progBinary), output)
 }
 
-type reflectData struct {
-	ImportPath string
-	Symbols    []string
+// run the given program with "-output filename" args.
+func run(program, output string) error {
+	cmd := exec.Command(program, "-output", output)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // This program imports specialized functions and runs generator.
 var generatorProgram = template.Must(
-	template.New("program").Parse(`
-package main
-
-import (
-	"encoding/gob"
-	"flag"
-	"fmt"
-	"os"
-	"path"
-	"reflect"
-
-	"github.com/guzenok/go-sqltest/sqlmockgen/model"
-
-	pkg_ {{printf "%q" .ImportPath}}
-)
-
-var output = flag.String("output", "", "The output file name, or empty to use stdout.")
-
-func main() {
-	flag.Parse()
-
-	its := []struct{
-		sym string
-		typ reflect.Type
-	}{
-		{{range .Symbols}}
-		{ {{printf "%q" .}}, reflect.TypeOf((*pkg_.{{.}})(nil)).Elem()},
-		{{end}}
-	}
-	pkg := &model.Package{
-		// NOTE: This behaves contrary to documented behaviour if the
-		// package name is not the final component of the import path.
-		// The reflect package doesn't expose the package name, though.
-		Name: path.Base({{printf "%q" .ImportPath}}),
-	}
-
-	for _, it := range its {
-		intf, err := model.InterfaceFromInterfaceType(it.typ)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Reflection: %v\n", err)
-			os.Exit(1)
-		}
-		intf.Name = it.sym
-		pkg.Interfaces = append(pkg.Interfaces, intf)
-	}
-
-	outfile := os.Stdout
-	if len(*output) != 0 {
-		var err error
-		outfile, err = os.Create(*output)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to open output file %q", *output)
-		}
-		defer func() {
-			if err := outfile.Close(); err != nil {
-				fmt.Fprintf(os.Stderr, "failed to close output file %q", *output)
-				os.Exit(1)
-			}
-		}()
-	}
-
-	if err := gob.NewEncoder(outfile).Encode(pkg); err != nil {
-		fmt.Fprintf(os.Stderr, "gob encode: %v\n", err)
-		os.Exit(1)
-	}
-}
-`))
+	template.New("program").Parse(code))

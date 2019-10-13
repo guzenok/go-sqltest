@@ -7,7 +7,6 @@ import (
 	"go/token"
 	"go/types"
 	"io"
-	"log"
 	"reflect"
 )
 
@@ -52,17 +51,6 @@ func init() {
 const compiler = "source"
 
 func Build(path string) (model *Package, err error) {
-	var srcDir string
-	srcDir, err = AvoidTesting(path)
-	defer func() {
-		err := RestoreTesting(path)
-		if err != nil {
-			log.Printf("failed to remove *"+tempfile+" files: %s", err)
-		}
-	}()
-	if err != nil {
-		return
-	}
 
 	goImporter := importer.ForCompiler(token.NewFileSet(), compiler, nil)
 	pkg, err := goImporter.Import(path)
@@ -71,10 +59,9 @@ func Build(path string) (model *Package, err error) {
 	}
 
 	model = &Package{
-		SrcDir: srcDir,
-		Name:   pkg.Name(),
-		Data:   make(map[string]struct{}),
-		Sqls:   make(map[string]struct{}),
+		Name: pkg.Name(),
+		Data: make(map[string]struct{}),
+		Sqls: make(map[string]struct{}),
 	}
 
 	scope := pkg.Scope()

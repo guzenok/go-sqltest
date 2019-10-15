@@ -49,5 +49,8 @@ func InitDataExample1(x string, y string) error {
 
 // SqlsDictExample1 is for importer test.
 func SqlsDictExample1() ([]string, error) {
-	return nil, nil
+	return []string{
+		"select * from table1",
+		"select * from table2",
+	}, nil
 }

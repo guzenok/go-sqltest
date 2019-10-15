@@ -25,7 +25,16 @@ func WriteCode(
 	sqls SqlsDictFunctions,
 	out io.Writer,
 ) error {
-	fmt.Fprintf(out, "Hello World!")
+
+	for n, f := range sqls {
+		ss, err := f()
+		fmt.Fprintf(out, "%s() returns ", n)
+		if err != nil {
+			fmt.Fprintf(out, "error %s\n", err)
+		}
+		fmt.Fprintf(out, "%v\n", ss)
+	}
+
 	return nil
 }
 

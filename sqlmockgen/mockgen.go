@@ -75,7 +75,7 @@ func main() {
 		descr.CopyrightHeader = string(header)
 	}
 
-	err = reflect(descr, *destination)
+	err = generate(descr, *destination)
 	if err != nil {
 		log.Fatal(err)
 	}

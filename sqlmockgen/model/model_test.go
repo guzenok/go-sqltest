@@ -21,7 +21,7 @@ func TestBuild(t *testing.T) {
 		}
 	}()
 	if err != nil {
-		return
+		t.Fatal(err)
 	}
 
 	expect := &Package{

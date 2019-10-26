@@ -10,7 +10,10 @@ import (
 	"reflect"
 )
 
-const ImportPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
+const (
+	ImportPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
+	compiler   = "source"
+)
 
 type (
 	InitDataFunc func(a, b string) error
@@ -47,8 +50,6 @@ func init() {
 	typeofInitDataFunc = scope.Lookup(f1name).Type()
 	typeofSqlsDictFunc = scope.Lookup(f2name).Type()
 }
-
-const compiler = "source"
 
 func Build(path string) (model *Package, err error) {
 

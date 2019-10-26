@@ -67,7 +67,7 @@ func forEachSrcFile(
 
 func sourceDir(path string) (string, error) {
 	var mode build.ImportMode
-	pkg, err := build.Default.Import(path, "", mode)
+	pkg, err := build.Default.Import(path, ".", mode)
 	if err != nil {
 		return "", err
 	}

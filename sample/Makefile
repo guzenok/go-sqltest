@@ -1,0 +1,18 @@
+.PHONY: start stop
+
+start:
+	docker run --rm -d \
+	    --name sqltest-db \
+	    --network host \
+	    -e POSTGRES_DB=test \
+	    postgres:9.5
+
+stop:
+	docker stop \
+	    sqltest-db
+
+sql:
+	docker exec -ti \
+	    sqltest-db \
+	    psql -h localhost -p 5432 test postgres
+

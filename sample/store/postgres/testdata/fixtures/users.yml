@@ -1,0 +1,29 @@
+- id: 1
+  login: test1
+  password: test
+  created_at: RAW=now()
+  is_super: false
+
+- id: 2
+  login: test2
+  password: test
+  created_at: RAW=now()
+  is_super: true
+
+- id: 10
+  login: test10
+  password: test10
+  created_at: RAW=now()
+  is_super: false
+
+- id: 20
+  login: test20
+  password: test20
+  created_at: RAW=now()
+  is_super: false
+
+- id: 30
+  login: test30
+  password: test30
+  created_at: RAW=now()
+  is_super: false

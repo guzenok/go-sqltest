@@ -10,7 +10,7 @@ import (
 
 type transactionFunc func(tx *sqlx.Tx) error
 
-func (c *connection) ExecuteInTransaction(ctx context.Context, f transactionFunc) error {
+func (c *postgresStore) ExecuteInTransaction(ctx context.Context, f transactionFunc) error {
 	tx, err := c.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed begin transaction")

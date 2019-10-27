@@ -2,42 +2,73 @@ package postgres
 
 import (
 	"database/sql"
-	"testing"
+	"path/filepath"
 
+	"github.com/pkg/errors"
+
+	"github.com/DATA-DOG/go-sqlmock"
 	"gopkg.in/testfixtures.v2"
-
-	"github.com/guzenok/go-sqltest/sample/store"
 )
 
 const (
-	ErrForValueExpectedGot = "for %v: expected %v, got %v"
+	uri         = "postgresql://postgres:postgres@localhost:5432/test?sslmode=disable"
+	fixturesDir = "testdata"
 )
 
-func testConnection(t *testing.T) store.Store {
-	// Create new sqlx db connection to apply latest migrations
-	cfg := store.NewDatabaseConfig()
-	s, err := New(cfg)
+func InitDbUsers(db *sql.DB) (err error) {
+	err = Migrate(db)
 	if err != nil {
-		t.Fatalf("can't apply migrations: %v", err)
+		return
 	}
 
-	// Create new sql db connection to load fixtures
-	db, err := sql.Open(driverName, cfg.URI)
+	err = loadFixtures(db, "users")
 	if err != nil {
-		t.Fatalf("can't connect to postgresql test database: %v", err)
+		return
 	}
 
-	fixtures, err := testfixtures.NewFolder(db, &testfixtures.PostgreSQL{}, "testdata/fixtures")
+	return err
+}
+
+func SqlsDictUsers() ([]string, error) {
+	return nil, nil
+}
+
+func UsersTestDb() (*sql.DB, sqlmock.Sqlmock, error) {
+	db, err := sql.Open(driverName, uri)
 	if err != nil {
-		t.Fatalf("can't read fixtures folder: %v", err)
-	}
-	if err := fixtures.DetectTestDatabase(); err != nil {
-		t.Fatalf("database is not for tests: %v", err)
+		return nil, nil, errors.Wrap(err, "can't connect to database")
 	}
 
-	if err := fixtures.Load(); err != nil {
-		t.Fatalf("can't load fixtures: %v", err)
+	err = InitDbUsers(db)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "can't init database")
 	}
 
-	return s
+	return db, nil, nil
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return db, mock, err
+}
+
+func loadFixtures(db *sql.DB, name string) (err error) {
+	fixtures, err := testfixtures.NewFolder(
+		db,
+		&testfixtures.PostgreSQL{},
+		filepath.Join(fixturesDir, name),
+	)
+	if err != nil {
+		return
+	}
+
+	err = fixtures.DetectTestDatabase()
+	if err != nil {
+		return
+	}
+
+	err = fixtures.Load()
+	return
 }

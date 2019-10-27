@@ -1,12 +1,12 @@
 package postgres
 
 import (
+	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
+	"github.com/golang-migrate/migrate/v4/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // postgresql driver
 	"github.com/pkg/errors"
@@ -18,47 +18,57 @@ import (
 //go:generate go run github.com/kevinburke/go-bindata/go-bindata -o ./migrations/migrations.bindata.go -pkg migrations -ignore=\\*.go ./migrations/...
 
 const (
-	driverName    = "postgres"
-	sourceName    = "go-bindata"
-	migrationsDir = "migrations"
+	actualVersion uint = 1550026905
+	driverName         = "postgres"
+	migrationsDir      = "migrations"
 )
 
-// New constructor for connection to postgresql RDBMS
-func New(cfg *store.DatabaseConfig) (store store.Store, err error) {
-	if cfg == nil {
-		return nil, errors.New("config not set")
+type postgresStore struct {
+	db *sqlx.DB
+}
+
+func (s *postgresStore) Close() error {
+	return s.db.Close()
+}
+
+func (s *postgresStore) Ping() error {
+	return s.db.Ping()
+}
+
+// New store over postgres db.
+func New(uri string) (store.Store, error) {
+	db, err := sql.Open(driverName, uri)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't connect to database")
 	}
 
-	db, err := sqlx.Connect(driverName, cfg.URI)
+	err = Migrate(db)
 	if err != nil {
-		err = errors.Wrap(err, "can't connect to postgresql database")
+		return nil, errors.Wrap(err, "can't migrate database")
+	}
+
+	return Wrap(db), nil
+}
+
+// Wrap db in store.
+func Wrap(db *sql.DB) store.Store {
+	return &postgresStore{
+		db: sqlx.NewDb(db, driverName),
+	}
+}
+
+// Migrate db to actualVersion.
+func Migrate(db *sql.DB) (err error) {
+	m, err := migration(db)
+	if err != nil {
 		return
 	}
 
-	names, err := migrations.AssetDir(migrationsDir)
-	if err != nil {
-		return
-	}
-
-	sourceInstance, err := bindata.WithInstance(bindata.Resource(names, asset))
-	if err != nil {
-		return
-	}
-
-	driver, err := postgres.WithInstance(db.DB, new(postgres.Config))
-	if err != nil {
-		return
-	}
-
-	m, err := migrate.NewWithInstance(sourceName, sourceInstance, driverName, driver)
-	if err != nil {
-		return
-	}
-
-	if cfg.Version == 0 {
+	version := actualVersion
+	if version == 0 {
 		err = m.Up()
 	} else {
-		err = m.Migrate(cfg.Version)
+		err = m.Migrate(version)
 	}
 	if err == migrate.ErrNoChange {
 		err = nil
@@ -72,29 +82,35 @@ func New(cfg *store.DatabaseConfig) (store store.Store, err error) {
 		return
 	}
 	if dirty {
-		return nil, errors.New("migrations is dirty")
+		return errors.New("migrations is dirty")
 	}
-	log.Printf("migrations is applied: current version %d", version)
 
-	return &connection{db}, nil
+	return
 }
 
-type connection struct {
-	db *sqlx.DB
-}
-
-func (c *connection) Close() error {
-	return c.db.Close()
-}
-
-func (c *connection) Ping() error {
-	return c.db.Ping()
-}
-
-func asset(name string) ([]byte, error) {
-	data, err := migrations.Asset(fmt.Sprintf("%s/%s", migrationsDir, name))
+func migration(db *sql.DB) (m *migrate.Migrate, err error) {
+	names, err := migrations.AssetDir(migrationsDir)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return data, nil
+
+	loadByName := func(name string) ([]byte, error) {
+		return migrations.Asset(
+			fmt.Sprintf("%s/%s", migrationsDir, name))
+	}
+
+	assets := bindata.Resource(names, loadByName)
+
+	src, err := bindata.WithInstance(assets)
+	if err != nil {
+		return
+	}
+
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		return
+	}
+
+	m, err = migrate.NewWithInstance("go-bindata", src, driverName, driver)
+	return
 }

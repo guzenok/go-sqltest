@@ -1,0 +1,11 @@
+- id: 1
+  login: test1
+  password: test
+  created_at: RAW=now()
+  is_super: false
+
+- id: 2
+  login: test2
+  password: test
+  created_at: RAW=now()
+  is_super: true

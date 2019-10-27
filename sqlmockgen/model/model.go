@@ -16,7 +16,7 @@ const (
 )
 
 type (
-	InitDataFunc func(a, b string) error
+	InitDbFunc   func(a, b string) error
 	SqlsDictFunc func() ([]string, error)
 
 	// Package is a Go package.
@@ -42,12 +42,12 @@ func init() {
 	scope := pkg.Scope()
 
 	var (
-		f1     InitDataFunc
+		f1     InitDbFunc
 		f1name = reflect.TypeOf(f1).Name()
 		f2     SqlsDictFunc
 		f2name = reflect.TypeOf(f2).Name()
 	)
-	typeofInitDataFunc = scope.Lookup(f1name).Type()
+	typeofInitDbFunc = scope.Lookup(f1name).Type()
 	typeofSqlsDictFunc = scope.Lookup(f2name).Type()
 }
 
@@ -77,7 +77,7 @@ func Build(path string) (model *Package, err error) {
 			continue
 		}
 
-		if types.AssignableTo(typeofInitDataFunc, funcType) {
+		if types.AssignableTo(typeofInitDbFunc, funcType) {
 			model.Data[name] = struct{}{}
 			continue
 		}

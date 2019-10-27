@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// pkgPath is the importable path for package model
+// thisPkgPath is the importable path for package model
 const thisPkgPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
 
 func TestBuild(t *testing.T) {
@@ -27,7 +27,7 @@ func TestBuild(t *testing.T) {
 	expect := &Package{
 		Name: "model",
 		Data: map[string]struct{}{
-			"InitDataExample1": struct{}{},
+			"InitDbExample1": struct{}{},
 		},
 		Sqls: map[string]struct{}{
 			"SqlsDictExample1": struct{}{},
@@ -42,8 +42,8 @@ func TestBuild(t *testing.T) {
 	assert.EqualValues(expect, got)
 }
 
-// InitDataExample1 is for importer test.
-func InitDataExample1(x string, y string) error {
+// InitDbExample1 is for importer test.
+func InitDbExample1(x string, y string) error {
 	return nil
 }
 

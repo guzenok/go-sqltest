@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"log"
 	"testing"
 
@@ -43,14 +44,11 @@ func TestBuild(t *testing.T) {
 }
 
 // InitDbExample1 is for importer test.
-func InitDbExample1(x string, y string) error {
+func InitDbExample1(db *sql.DB) error {
 	return nil
 }
 
 // SqlsDictExample1 is for importer test.
-func SqlsDictExample1() ([]string, error) {
-	return []string{
-		"select * from table1",
-		"select * from table2",
-	}, nil
+func SqlsDictExample1() []Query {
+	return nil
 }

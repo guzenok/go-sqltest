@@ -2,6 +2,7 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 	"go/importer"
 	"go/token"
@@ -11,13 +12,19 @@ import (
 )
 
 const (
-	ImportPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
-	compiler   = "source"
+	thisPackage = "github.com/guzenok/go-sqltest/sqlmockgen/model"
+	compiler    = "source"
 )
 
 type (
-	InitDbFunc   func(a, b string) error
-	SqlsDictFunc func() ([]string, error)
+	Query struct {
+		Tx   bool
+		SQL  string
+		Args []interface{}
+	}
+
+	InitDbFunc   func(db *sql.DB) error
+	SqlsDictFunc func() []Query
 
 	// Package is a Go package.
 	Package struct {
@@ -29,13 +36,13 @@ type (
 )
 
 var (
-	typeofInitDataFunc types.Type
+	typeofInitDbFunc   types.Type
 	typeofSqlsDictFunc types.Type
 )
 
 func init() {
 	goImporter := importer.ForCompiler(token.NewFileSet(), compiler, nil)
-	pkg, err := goImporter.Import(ImportPath)
+	pkg, err := goImporter.Import(thisPackage)
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +59,6 @@ func init() {
 }
 
 func Build(path string) (model *Package, err error) {
-
 	goImporter := importer.ForCompiler(token.NewFileSet(), compiler, nil)
 	pkg, err := goImporter.Import(path)
 	if err != nil {
@@ -77,12 +83,15 @@ func Build(path string) (model *Package, err error) {
 			continue
 		}
 
-		if types.AssignableTo(typeofInitDbFunc, funcType) {
+		// NOTE: AssignableTo() does not properly work because /usr/local/go/src/go/types/predicates.go:286
+		// (fixed locally)
+
+		if types.AssignableTo(funcType, typeofInitDbFunc) {
 			model.Data[name] = struct{}{}
 			continue
 		}
 
-		if types.AssignableTo(typeofSqlsDictFunc, funcType) {
+		if types.AssignableTo(funcType, typeofSqlsDictFunc) {
 			model.Sqls[name] = struct{}{}
 			continue
 		}

@@ -2,14 +2,68 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/guzenok/go-sqltest/sample/store"
+	"github.com/guzenok/go-sqltest/sqlmockgen/model"
 )
 
-func TestConnection_CreateUser(t *testing.T) {
+func InitDbUsers(db *sql.DB) (ctx interface{}, err error) {
+	err = Migrate(db)
+	if err != nil {
+		return
+	}
+
+	err = loadFixtures(db, "users")
+	if err != nil {
+		return
+	}
+
+	return wrap(db), err
+}
+
+func SqlsDictUsers(ctx interface{}) (sqls []model.Query) {
+	s := ctx.(*postgresStore)
+
+	record := func(sql string, args []interface{}, err error) {
+		if err != nil {
+			panic(err)
+		}
+		sqls = append(sqls, model.Query{
+			SQL:  sql,
+			Args: args,
+		})
+	}
+
+	recordTx := func(sql string, args []interface{}, err error) {
+		record(sql, args, err)
+		sqls[len(sqls)-1].Tx = true
+	}
+
+	recordTx(
+		s.sqlCreateUser(&store.User{
+			ID:       1,
+			Login:    "user01",
+			Password: "123456"}))
+	/*
+		recordTx(
+			s.sqlDeleteUser(&store.User{
+				ID: 1,
+			}))
+
+		recordTx(
+			s.sqlCreateUser(&store.User{
+				ID:       1,
+				Login:    "user01",
+				Password: "123456"}))
+	*/
+	return sqls
+}
+
+func TestConnection_User(t *testing.T) {
 	ctx := context.Background()
 
 	db, _, err := UsersTestDb()
@@ -18,14 +72,14 @@ func TestConnection_CreateUser(t *testing.T) {
 	}
 	defer db.Close()
 
-	s := Wrap(db)
+	s := wrap(db)
 
 	user := &store.User{
 		ID:       1,
 		Login:    "user01",
 		Password: "123456",
 	}
-	newPassword := "654321"
+	//newPassword := "654321"
 
 	_ = true &&
 
@@ -33,7 +87,7 @@ func TestConnection_CreateUser(t *testing.T) {
 			var err error
 			_, err = s.CreateUser(ctx, user)
 			assert.Error(t, err)
-		}) &&
+		}) /*&&
 
 		t.Run("delete", func(t *testing.T) {
 			err := s.DeleteUser(ctx, user.ID)
@@ -65,5 +119,5 @@ func TestConnection_CreateUser(t *testing.T) {
 			_ = assert.NoError(t, err) &&
 				assert.NotNil(t, user) &&
 				assert.Equal(t, newPassword, user.Password)
-		})
+		})*/
 }

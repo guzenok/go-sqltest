@@ -47,11 +47,11 @@ func New(uri string) (store.Store, error) {
 		return nil, errors.Wrap(err, "can't migrate database")
 	}
 
-	return Wrap(db), nil
+	return wrap(db), nil
 }
 
-// Wrap db in store.
-func Wrap(db *sql.DB) store.Store {
+// wrap db in store.
+func wrap(db *sql.DB) *postgresStore {
 	return &postgresStore{
 		db: sqlx.NewDb(db, driverName),
 	}

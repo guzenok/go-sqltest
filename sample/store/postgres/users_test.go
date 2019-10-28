@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/guzenok/go-sqltest/sample/store"
-	"github.com/guzenok/go-sqltest/sqlmockgen/model"
 )
 
 func InitDbUsers(db *sql.DB) (ctx interface{}, err error) {
@@ -25,53 +24,18 @@ func InitDbUsers(db *sql.DB) (ctx interface{}, err error) {
 	return wrap(db), err
 }
 
-func SqlsDictUsers(ctx interface{}) (sqls []model.Query) {
-	s := ctx.(*postgresStore)
-
-	record := func(sql string, args []interface{}, err error) {
-		if err != nil {
-			panic(err)
-		}
-		sqls = append(sqls, model.Query{
-			SQL:  sql,
-			Args: args,
-		})
-	}
-
-	recordTx := func(sql string, args []interface{}, err error) {
-		record(sql, args, err)
-		sqls[len(sqls)-1].Tx = true
-	}
-
-	recordTx(
-		s.sqlCreateUser(&store.User{
-			ID:       1,
-			Login:    "user01",
-			Password: "123456"}))
-	/*
-		recordTx(
-			s.sqlDeleteUser(&store.User{
-				ID: 1,
-			}))
-
-		recordTx(
-			s.sqlCreateUser(&store.User{
-				ID:       1,
-				Login:    "user01",
-				Password: "123456"}))
-	*/
-	return sqls
-}
-
-func TestConnection_User(t *testing.T) {
-	ctx := context.Background()
-
-	db, _, err := UsersTestDb()
+func TestStoreMock_Users(t *testing.T) {
+	db, _, err := UsersTestDb(t)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer db.Close()
 
+	testStore_Users(t, db)
+}
+
+func testStore_Users(t *testing.T, db *sql.DB) {
+	ctx := context.Background()
 	s := wrap(db)
 
 	user := &store.User{
@@ -79,15 +43,15 @@ func TestConnection_User(t *testing.T) {
 		Login:    "user01",
 		Password: "123456",
 	}
-	//newPassword := "654321"
+	newPassword := "654321"
 
 	_ = true &&
 
-		t.Run("exists", func(t *testing.T) {
+		t.Run("already exists", func(t *testing.T) {
 			var err error
 			_, err = s.CreateUser(ctx, user)
 			assert.Error(t, err)
-		}) /*&&
+		}) &&
 
 		t.Run("delete", func(t *testing.T) {
 			err := s.DeleteUser(ctx, user.ID)
@@ -119,5 +83,5 @@ func TestConnection_User(t *testing.T) {
 			_ = assert.NoError(t, err) &&
 				assert.NotNil(t, user) &&
 				assert.Equal(t, newPassword, user.Password)
-		})*/
+		})
 }

@@ -8,7 +8,6 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
-	golang.org/x/tools v0.0.0-20190425222832-ad9eeb80039a
 	google.golang.org/grpc v1.21.0 // indirect
 	gopkg.in/testfixtures.v2 v2.6.0
 )

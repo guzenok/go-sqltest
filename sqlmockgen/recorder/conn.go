@@ -8,6 +8,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
@@ -250,7 +252,26 @@ func namedToString(args []driver.NamedValue) string {
 }
 
 func rowsToString(rr *rows) string {
-	return fmt.Sprintf("sqlmock.NewRows(%#v).FromCSVString(%#v)", rr.cols, rr.CSV())
+	var ss []string
+	for _, vv := range rr.vals {
+		var s string
+		for _, v := range vv {
+			switch x := v.(type) {
+			case time.Time:
+				s = s + fmt.Sprintf("time.Unix(%d, %d), ", x.Unix(), x.Nanosecond())
+			default:
+				s = s + fmt.Sprintf("%#v, ", v)
+			}
+		}
+		s = fmt.Sprintf("rr.AddRow([]driver.Value{%s}...)", s)
+		ss = append(ss, s)
+	}
+
+	return fmt.Sprintf(`func() *sqlmock.Rows {
+		rr := sqlmock.NewRows(%#v)
+		%s
+		return rr
+	}()`, rr.cols, strings.Join(ss, "\n"))
 }
 
 func errToString(err error) string {

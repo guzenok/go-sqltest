@@ -45,7 +45,7 @@ func (rr *rows) CSV() string {
 	var buf []string
 	for _, vv := range rr.vals {
 		for _, v := range vv {
-			buf = append(buf, fmt.Sprintf("%#v", v))
+			buf = append(buf, fmt.Sprintf("%v", v))
 		}
 	}
 	return strings.Join(buf, ", ")

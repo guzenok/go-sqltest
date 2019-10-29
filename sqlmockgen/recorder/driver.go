@@ -3,14 +3,17 @@ package recorder
 import (
 	"database/sql"
 	"database/sql/driver"
+	"io"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 )
 
 // Driver wraps the database driver.
 type Driver struct {
 	orig driver.Driver
 	mock sqlmock.Sqlmock
+	out  io.Writer
 }
 
 // Open opens a new connection to the database. name is a connection string.
@@ -20,17 +23,26 @@ func (d *Driver) Open(name string) (driver.Conn, error) {
 		return nil, err
 	}
 
-	return newConn(connection, d.mock), nil
+	return newConn(connection, d.mock, d.out), nil
 }
 
 // Wrap driver with mock recorder.
-func Wrap(orig driver.Driver, mock sqlmock.Sqlmock) (name string, drv driver.Driver) {
+func Wrap(orig driver.Driver, mock sqlmock.Sqlmock, out io.Writer) (name string, drv driver.Driver) {
+	if mock == nil {
+		var err error
+		_, mock, err = sqlmock.New()
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	drv = &Driver{
 		orig: orig,
 		mock: mock,
+		out:  out,
 	}
 
-	name = "aesdfzsdfsd" // TODO: make it random uniq
+	name = uuid.New().String()
 	sql.Register(name, drv)
 
 	return

@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 
@@ -25,19 +23,17 @@ type conn struct {
 	connection driver.Conn
 	txns       []driver.Tx
 
-	code io.Writer
+	out  io.Writer
 	mock sqlmock.Sqlmock
 }
 
-func newConn(c driver.Conn, mock sqlmock.Sqlmock) *conn {
+func newConn(c driver.Conn, mock sqlmock.Sqlmock, out io.Writer) *conn {
 	cn := &conn{
 		connection: c,
 
-		code: ioutil.Discard,
+		out:  out,
 		mock: mock,
 	}
-
-	cn.code = os.Stderr
 
 	cn.txns = []driver.Tx{cn}
 
@@ -238,7 +234,7 @@ func (cn *conn) QueryContext(ctx context.Context, query string, args []driver.Na
 }
 
 func (cn *conn) write(format string, a ...interface{}) {
-	_, err := fmt.Fprintf(cn.code, format, a...)
+	_, err := fmt.Fprintf(cn.out, format, a...)
 	if err != nil {
 		panic(err)
 	}

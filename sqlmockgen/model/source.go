@@ -13,6 +13,8 @@ const (
 	tempfile = testfile + ".tmp.go"
 )
 
+// AvoidTesting by copying test files to normal.
+// NOTE: it is a workaround.
 func AvoidTesting(path string) (dir string, err error) {
 	dir, err = forEachSrcFile(
 		path,
@@ -26,6 +28,8 @@ func AvoidTesting(path string) (dir string, err error) {
 	return
 }
 
+// RestoreTesting by removing normal copies of test files.
+// NOTE: it is a workaround.
 func RestoreTesting(path string) error {
 	_, err := forEachSrcFile(path, tempfile, os.Remove)
 	return err

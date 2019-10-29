@@ -3,12 +3,12 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
 	"go/importer"
 	"go/token"
 	"go/types"
-	"io"
 	"reflect"
+	"strings"
+	"testing"
 )
 
 const (
@@ -17,27 +17,22 @@ const (
 )
 
 type (
-	Query struct {
-		Tx   bool
-		SQL  string
-		Args []interface{}
-	}
+	// Signiture agreement here.
 
-	InitDbFunc   func(db *sql.DB) error
-	SqlsDictFunc func() []Query
+	InitDbFunc func(db *sql.DB) error
+	TestDbFunc func(*testing.T, *sql.DB)
+)
 
-	// Package is a Go package.
-	Package struct {
-		SrcDir string
-		Name   string
-		Data   map[string]struct{}
-		Sqls   map[string]struct{}
-	}
+const (
+	// Naming agreement here.
+
+	initDbFuncName   = "InitTestDb"
+	testDbFuncSuffix = "Test"
 )
 
 var (
-	typeofInitDbFunc   types.Type
-	typeofSqlsDictFunc types.Type
+	typeofInitDbFunc types.Type
+	typeofTestDbFunc types.Type
 )
 
 func init() {
@@ -49,13 +44,13 @@ func init() {
 	scope := pkg.Scope()
 
 	var (
-		f1     InitDbFunc
-		f1name = reflect.TypeOf(f1).Name()
-		f2     SqlsDictFunc
-		f2name = reflect.TypeOf(f2).Name()
+		initFunc InitDbFunc
+		initName = reflect.TypeOf(initFunc).Name()
+		testFunc TestDbFunc
+		testName = reflect.TypeOf(testFunc).Name()
 	)
-	typeofInitDbFunc = scope.Lookup(f1name).Type()
-	typeofSqlsDictFunc = scope.Lookup(f2name).Type()
+	typeofInitDbFunc = scope.Lookup(initName).Type()
+	typeofTestDbFunc = scope.Lookup(testName).Type()
 }
 
 func Build(path string) (model *Package, err error) {
@@ -67,8 +62,6 @@ func Build(path string) (model *Package, err error) {
 
 	model = &Package{
 		Name: pkg.Name(),
-		Data: make(map[string]struct{}),
-		Sqls: make(map[string]struct{}),
 	}
 
 	scope := pkg.Scope()
@@ -83,23 +76,22 @@ func Build(path string) (model *Package, err error) {
 			continue
 		}
 
-		// NOTE: AssignableTo() does not properly work because /usr/local/go/src/go/types/predicates.go:286
+		// NOTE: AssignableTo() does not properly work
+		// because /usr/local/go/src/go/types/predicates.go:286
 		// (fixed locally)
 
-		if types.AssignableTo(funcType, typeofInitDbFunc) {
-			model.Data[name] = struct{}{}
+		if obj.Name() == initDbFuncName &&
+			types.AssignableTo(funcType, typeofInitDbFunc) {
+			model.Inits = append(model.Inits, name)
 			continue
 		}
 
-		if types.AssignableTo(funcType, typeofSqlsDictFunc) {
-			model.Sqls[name] = struct{}{}
+		if strings.HasSuffix(obj.Name(), testDbFuncSuffix) &&
+			types.AssignableTo(funcType, typeofTestDbFunc) {
+			model.Tests = append(model.Tests, name)
 			continue
 		}
 	}
 
 	return
-}
-
-func (pkg *Package) Print(w io.Writer) {
-	fmt.Fprintf(w, "package %s\n", pkg.Name)
 }

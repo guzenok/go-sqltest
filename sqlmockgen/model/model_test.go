@@ -14,6 +14,17 @@ const thisPkgPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
 func TestBuild(t *testing.T) {
 	assert := assert.New(t)
 
+	expect := &Package{
+		Name: "model",
+		Inits: []string{
+			"InitTestDb",
+		},
+		Tests: []string{
+			"Store1MockTest",
+			"Store2MockTest",
+		},
+	}
+
 	_, err := AvoidTesting(thisPkgPath)
 	defer func() {
 		err := RestoreTesting(thisPkgPath)
@@ -25,30 +36,29 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expect := &Package{
-		Name: "model",
-		Data: map[string]struct{}{
-			"InitDbExample1": struct{}{},
-		},
-		Sqls: map[string]struct{}{
-			"SqlsDictExample1": struct{}{},
-		},
-	}
-
 	got, err := Build(thisPkgPath)
 	if !assert.NoError(err) {
 		return
 	}
 
-	assert.EqualValues(expect, got)
+	_ = true &&
+		assert.Equal(expect.Name, got.Name) &&
+		assert.Equal(expect.SrcDir, got.SrcDir) &&
+		assert.ElementsMatch(expect.Inits, got.Inits) &&
+		assert.ElementsMatch(expect.Tests, got.Tests)
 }
 
-// InitDbExample1 is for importer test.
-func InitDbExample1(db *sql.DB) error {
+// InitTestDb is for importer test.
+func InitTestDb(db *sql.DB) error {
 	return nil
 }
 
-// SqlsDictExample1 is for importer test.
-func SqlsDictExample1() []Query {
-	return nil
+// Store1MockTest is for importer test.
+func Store1MockTest(t *testing.T, db *sql.DB) {
+	return
+}
+
+// Store2MockTest is for importer test.
+func Store2MockTest(t *testing.T, db *sql.DB) {
+	return
 }

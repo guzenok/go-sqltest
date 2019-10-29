@@ -1,4 +1,4 @@
-package driver
+package recorder
 
 import (
 	"context"
@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	// TODO: replace with different types on conn
+	// TODO: replace with different types on conn for each set of implemented interfaces
+	// by original connection.
 	ErrIsNotImplemented = errors.New("is not implemented")
 )
 
@@ -203,11 +204,11 @@ func (cn *conn) Query(query string, args []driver.Value) (driver.Rows, error) {
 		return nil, err
 	}
 
-	res, rr := copyRows(res)
-	after.WillReturnRows(rr)
+	rr := parseRows(res)
+	after.WillReturnRows(rr.MockRows())
 	cn.write(".WillReturnRows(%s)\n", rowsToString(rr))
 
-	return res, err
+	return rr, err
 }
 
 // Implement the "QueryerContext" interface.
@@ -226,11 +227,11 @@ func (cn *conn) QueryContext(ctx context.Context, query string, args []driver.Na
 		return nil, err
 	}
 
-	res, rr := copyRows(res)
-	after.WillReturnRows(rr)
+	rr := parseRows(res)
+	after.WillReturnRows(rr.MockRows())
 	cn.write(".WillReturnRows(%s)\n", rowsToString(rr))
 
-	return res, err
+	return rr, err
 }
 
 func (cn *conn) write(format string, a ...interface{}) {
@@ -241,21 +242,32 @@ func (cn *conn) write(format string, a ...interface{}) {
 }
 
 func argsToString(args []driver.Value) string {
-	return ""
+	return fmt.Sprintf("%#v", args)
 }
 
 func namedToString(args []driver.NamedValue) string {
-	return fmt.Sprintf("%v", args)
+	return fmt.Sprintf("%#v", args)
 }
 
-func rowsToString(rows *sqlmock.Rows) string {
-	return fmt.Sprintf("%v", rows)
+func rowsToString(rr *rows) string {
+	return fmt.Sprintf("sqlmock.NewRows(%#v).FromCSVString(%#v)", rr.cols, rr.CSV())
 }
 
 func errToString(err error) string {
-	return fmt.Sprintf("errors.New(%q)", err.Error())
+	return fmt.Sprintf("errors.New(%#v)", err.Error())
 }
 
 func resultToString(res driver.Result) string {
-	return fmt.Sprintf("%v", res)
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		// panic(err)
+		lastId = 0
+	}
+
+	n, err := res.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf("sqlmock.NewResult(%d, %d)", lastId, n)
 }

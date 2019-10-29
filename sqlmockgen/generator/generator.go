@@ -15,13 +15,13 @@ import (
 const ImportPath = "github.com/guzenok/go-sqltest/sqlmockgen/generator"
 
 type (
-	InitDataFunctions map[string]model.InitDataFunc
+	InitDbFunctions   map[string]model.InitDbFunc
 	SqlsDictFunctions map[string]model.SqlsDictFunc
 )
 
 func WriteCode(
 	pkgName string,
-	inits InitDataFunctions,
+	inits InitDbFunctions,
 	sqls SqlsDictFunctions,
 	out io.Writer,
 ) error {

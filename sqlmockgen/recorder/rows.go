@@ -1,8 +1,10 @@
-package driver
+package recorder
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"io"
+	"strings"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
@@ -12,11 +14,10 @@ type rows struct {
 	vals [][]driver.Value
 }
 
-func copyRows(src driver.Rows) (dst *rows, rr *sqlmock.Rows) {
-	dst = &rows{
+func parseRows(src driver.Rows) *rows {
+	dst := &rows{
 		cols: src.Columns(),
 	}
-	rr = sqlmock.NewRows(dst.cols)
 
 	n := len(dst.cols)
 	for {
@@ -25,10 +26,29 @@ func copyRows(src driver.Rows) (dst *rows, rr *sqlmock.Rows) {
 			break
 		}
 		dst.vals = append(dst.vals, vv)
-		rr.AddRow(vv...)
 	}
 
-	return dst, rr
+	return dst
+}
+
+// MockRows from rows.
+func (rr *rows) MockRows() *sqlmock.Rows {
+	mock := sqlmock.NewRows(rr.cols)
+	for _, vv := range rr.vals {
+		mock.AddRow(vv...)
+	}
+	return mock
+}
+
+// CSV of go-values of all rows.
+func (rr *rows) CSV() string {
+	var buf []string
+	for _, vv := range rr.vals {
+		for _, v := range vv {
+			buf = append(buf, fmt.Sprintf("%#v", v))
+		}
+	}
+	return strings.Join(buf, ", ")
 }
 
 // Columns returns the names of the columns. The number of

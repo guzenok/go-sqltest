@@ -73,9 +73,9 @@ func (cn *conn) Begin() (driver.Tx, error) {
 
 // Commit implements driver.Tx.
 func (cn *conn) Commit() error {
-	tx := cn.pop()
 	after := cn.mock.ExpectCommit()
 	cn.write("mock.ExpectCommit()")
+	tx := cn.pop()
 	err := tx.Commit()
 	if err != nil {
 		after.WillReturnError(err)
@@ -87,9 +87,9 @@ func (cn *conn) Commit() error {
 
 // Rollback implements driver.Tx.
 func (cn *conn) Rollback() error {
-	tx := cn.pop()
 	after := cn.mock.ExpectRollback()
 	cn.write("mock.ExpectRollback()")
+	tx := cn.pop()
 	err := tx.Rollback()
 	if err != nil {
 		after.WillReturnError(err)
@@ -154,7 +154,8 @@ func (cn *conn) Exec(query string, args []driver.Value) (driver.Result, error) {
 		return nil, ErrIsNotImplemented
 	}
 
-	after := cn.mock.ExpectExec(query).WithArgs(args)
+	after := cn.mock.ExpectExec(query).WithArgs(args...)
+	cn.write("mock.ExpectExec(`%s`).WithArgs(\n%s)", query, argsToString(args))
 	res, err := i.Exec(query, args)
 	if err != nil {
 		after.WillReturnError(err)
@@ -175,8 +176,8 @@ func (cn *conn) ExecContext(ctx context.Context, query string, args []driver.Nam
 		return nil, ErrIsNotImplemented
 	}
 
-	after := cn.mock.ExpectExec(query).WithArgs(args)
-	cn.write("mock.ExpectExec(`%s`).WithArgs(%s)", query, namedToString(args))
+	after := cn.mock.ExpectExec(query).WithArgs(namedToValues(args)...)
+	cn.write("mock.ExpectExec(`%s`).WithArgs(\n%s)", query, namedToString(args))
 	res, err := i.ExecContext(ctx, query, args)
 	if err != nil {
 		after.WillReturnError(err)
@@ -198,7 +199,7 @@ func (cn *conn) Query(query string, args []driver.Value) (driver.Rows, error) {
 	}
 
 	after := cn.mock.ExpectQuery(query).WithArgs(args)
-	cn.write("mock.ExpectQuery(`%s`).WithArgs(%s)", query, argsToString(args))
+	cn.write("mock.ExpectQuery(`%s`).WithArgs(\n%s)", query, argsToString(args))
 	res, err := i.Query(query, args)
 	if err != nil {
 		after.WillReturnError(err)
@@ -220,8 +221,8 @@ func (cn *conn) QueryContext(ctx context.Context, query string, args []driver.Na
 		return nil, ErrIsNotImplemented
 	}
 
-	after := cn.mock.ExpectQuery(query).WithArgs(args)
-	cn.write("mock.ExpectQuery(`%s`).WithArgs(%s)", query, namedToString(args))
+	after := cn.mock.ExpectQuery(query).WithArgs(namedToValues(args)...)
+	cn.write("mock.ExpectQuery(`%s`).WithArgs(\n%s)", query, namedToString(args))
 	res, err := i.QueryContext(ctx, query, args)
 	if err != nil {
 		after.WillReturnError(err)
@@ -247,8 +248,20 @@ func argsToString(args []driver.Value) string {
 	return fmt.Sprintf("%#v", args)
 }
 
+func namedToValues(args []driver.NamedValue) []driver.Value {
+	vv := make([]driver.Value, len(args), len(args))
+	for i, nv := range args {
+		vv[i] = nv.Value
+	}
+	return vv
+}
+
 func namedToString(args []driver.NamedValue) string {
-	return fmt.Sprintf("%#v", args)
+	var s string
+	for _, a := range args {
+		s = s + fmt.Sprintf("driver.Value(%s),\n", valToString(a.Value))
+	}
+	return s
 }
 
 func rowsToString(rr *rows) string {
@@ -256,14 +269,9 @@ func rowsToString(rr *rows) string {
 	for _, vv := range rr.vals {
 		var s string
 		for _, v := range vv {
-			switch x := v.(type) {
-			case time.Time:
-				s = s + fmt.Sprintf("time.Unix(%d, %d), ", x.Unix(), x.Nanosecond())
-			default:
-				s = s + fmt.Sprintf("%#v, ", v)
-			}
+			s = s + valToString(v) + ", "
 		}
-		s = fmt.Sprintf("rr.AddRow([]driver.Value{%s}...)", s)
+		s = fmt.Sprintf("rr.AddRow(%s)", s)
 		ss = append(ss, s)
 	}
 
@@ -274,6 +282,15 @@ func rowsToString(rr *rows) string {
 	}()`, rr.cols, strings.Join(ss, "\n"))
 }
 
+func valToString(v interface{}) string {
+	switch x := v.(type) {
+	case time.Time:
+		return fmt.Sprintf("time.Unix(%d, %d)", x.Unix(), x.Nanosecond())
+	default:
+		return fmt.Sprintf("%#v", x)
+	}
+}
+
 func errToString(err error) string {
 	return fmt.Sprintf("errors.New(%#v)", err.Error())
 }
@@ -281,7 +298,6 @@ func errToString(err error) string {
 func resultToString(res driver.Result) string {
 	lastId, err := res.LastInsertId()
 	if err != nil {
-		// panic(err)
 		lastId = 0
 	}
 

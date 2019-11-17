@@ -16,46 +16,24 @@ const (
 	compiler    = "source"
 )
 
+// Signiture agreement here.
 type (
-	// Signiture agreement here.
-
 	InitDbFunc func(db *sql.DB) error
 	TestDbFunc func(*testing.T, *sql.DB)
 )
 
+// Naming agreement here.
 const (
-	// Naming agreement here.
-
 	initDbFuncName   = "InitTestDb"
 	testDbFuncSuffix = "Test"
 )
 
-var (
-	typeofInitDbFunc types.Type
-	typeofTestDbFunc types.Type
-)
-
-func init() {
-	goImporter := importer.ForCompiler(token.NewFileSet(), compiler, nil)
-	pkg, err := goImporter.Import(thisPackage)
-	if err != nil {
-		panic(err)
-	}
-	scope := pkg.Scope()
-
-	var (
-		initFunc InitDbFunc
-		initName = reflect.TypeOf(initFunc).Name()
-		testFunc TestDbFunc
-		testName = reflect.TypeOf(testFunc).Name()
-	)
-	typeofInitDbFunc = scope.Lookup(initName).Type()
-	typeofTestDbFunc = scope.Lookup(testName).Type()
-}
-
 func Build(path string) (model *Package, err error) {
-	goImporter := importer.ForCompiler(token.NewFileSet(), compiler, nil)
-	pkg, err := goImporter.Import(path)
+	golang := importer.ForCompiler(token.NewFileSet(), compiler, nil)
+
+	typeofInitDbFunc, typeofTestDbFunc := loadTypes(golang)
+
+	pkg, err := golang.Import(path)
 	if err != nil {
 		return
 	}
@@ -76,10 +54,6 @@ func Build(path string) (model *Package, err error) {
 			continue
 		}
 
-		// NOTE: AssignableTo() does not properly work
-		// because /usr/local/go/src/go/types/predicates.go:286
-		// (fixed locally)
-
 		if obj.Name() == initDbFuncName &&
 			types.AssignableTo(funcType, typeofInitDbFunc) {
 			model.Inits = append(model.Inits, name)
@@ -93,5 +67,27 @@ func Build(path string) (model *Package, err error) {
 		}
 	}
 
+	return
+}
+
+func loadTypes(golang types.Importer) (
+	typeofInitDbFunc types.Type,
+	typeofTestDbFunc types.Type,
+) {
+	pkg, err := golang.Import(thisPackage)
+	if err != nil {
+		panic(err)
+	}
+	scope := pkg.Scope()
+
+	var (
+		initFunc InitDbFunc
+		initName = reflect.TypeOf(initFunc).Name()
+		testFunc TestDbFunc
+		testName = reflect.TypeOf(testFunc).Name()
+	)
+
+	typeofInitDbFunc = scope.Lookup(initName).Type()
+	typeofTestDbFunc = scope.Lookup(testName).Type()
 	return
 }

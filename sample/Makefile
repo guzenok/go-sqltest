@@ -1,4 +1,4 @@
-.PHONY: start stop
+.PHONY: start stop sql
 
 start:
 	docker run --rm -d \

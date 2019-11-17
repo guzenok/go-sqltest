@@ -11,8 +11,8 @@ import (
 	_ "github.com/lib/pq" // postgresql driver
 	"github.com/pkg/errors"
 
-	"github.com/guzenok/go-sqltest/sample/store"
-	"github.com/guzenok/go-sqltest/sample/store/postgres/migrations"
+	store "github.com/guzenok/go-sqltest/sample"
+	"github.com/guzenok/go-sqltest/sample/postgres/migrations"
 )
 
 //go:generate go run github.com/kevinburke/go-bindata/go-bindata -o ./migrations/migrations.bindata.go -pkg migrations -ignore=\\*.go ./migrations/...

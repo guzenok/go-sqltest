@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/guzenok/go-sqltest/sample/store"
+	store "github.com/guzenok/go-sqltest/sample"
 )
 
 func InitTestDb(db *sql.DB) (err error) {

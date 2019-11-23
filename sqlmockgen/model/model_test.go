@@ -25,9 +25,9 @@ func TestBuild(t *testing.T) {
 		},
 	}
 
-	_, err := AvoidTesting(thisPkgPath)
+	_, err := avoidTesting(thisPkgPath)
 	defer func() {
-		err := RestoreTesting(thisPkgPath)
+		err := restoreTesting(thisPkgPath)
 		if err != nil {
 			log.Printf("failed to remove *"+tempfile+" files: %s", err)
 		}
@@ -36,14 +36,13 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := Build(thisPkgPath)
+	got, err := Parse(thisPkgPath)
 	if !assert.NoError(err) {
 		return
 	}
 
 	_ = true &&
 		assert.Equal(expect.Name, got.Name) &&
-		assert.Equal(expect.SrcDir, got.SrcDir) &&
 		assert.ElementsMatch(expect.Inits, got.Inits) &&
 		assert.ElementsMatch(expect.Tests, got.Tests)
 }

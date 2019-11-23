@@ -6,6 +6,7 @@ import (
 	"go/importer"
 	"go/token"
 	"go/types"
+	"log"
 	"reflect"
 	"strings"
 	"testing"
@@ -28,19 +29,28 @@ const (
 	testDbFuncSuffix = "Test"
 )
 
-func Build(path string) (model *Package, err error) {
+func Parse(path string) (model *Package, err error) {
 	golang := importer.ForCompiler(token.NewFileSet(), compiler, nil)
-
 	typeofInitDbFunc, typeofTestDbFunc := loadTypes(golang)
+	model = &Package{}
+
+	model.SrcDir, err = avoidTesting(path)
+	defer func() {
+		err := restoreTesting(path)
+		if err != nil {
+			log.Printf("failed to remove temp-files: %s", err)
+		}
+	}()
+	if err != nil {
+		return
+	}
 
 	pkg, err := golang.Import(path)
 	if err != nil {
 		return
 	}
 
-	model = &Package{
-		Name: pkg.Name(),
-	}
+	model.Name = pkg.Name()
 
 	scope := pkg.Scope()
 	for _, name := range scope.Names() {

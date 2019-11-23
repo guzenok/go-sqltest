@@ -48,24 +48,10 @@ func main() {
 	}
 
 	var err error
-
-	var srcDir string
-	srcDir, err = model.AvoidTesting(descr.ImportPath)
-	defer func() {
-		err := model.RestoreTesting(descr.ImportPath)
-		if err != nil {
-			log.Printf("failed to remove temp-files: %s", err)
-		}
-	}()
-	if err != nil {
-		return
-	}
-
-	descr.Pkg, err = model.Build(descr.ImportPath)
+	descr.Pkg, err = model.Parse(descr.ImportPath)
 	if err != nil {
 		log.Fatalf("Failed reading import path: %v", err)
 	}
-	descr.Pkg.SrcDir = srcDir
 
 	if *copyrightFile != "" {
 		header, err := ioutil.ReadFile(*copyrightFile)

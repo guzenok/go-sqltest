@@ -15,7 +15,7 @@ const (
 
 // AvoidTesting by copying test files to normal.
 // NOTE: it is a workaround.
-func AvoidTesting(path string) (dir string, err error) {
+func avoidTesting(path string) (dir string, err error) {
 	dir, err = forEachSrcFile(
 		path,
 		testfile,
@@ -30,7 +30,7 @@ func AvoidTesting(path string) (dir string, err error) {
 
 // RestoreTesting by removing normal copies of test files.
 // NOTE: it is a workaround.
-func RestoreTesting(path string) error {
+func restoreTesting(path string) error {
 	_, err := forEachSrcFile(path, tempfile, os.Remove)
 	return err
 }

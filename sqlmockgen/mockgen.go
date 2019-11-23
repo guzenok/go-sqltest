@@ -30,25 +30,27 @@ type Descr struct {
 	ImportPath      string
 	Pkg             *model.Package
 	CopyrightHeader string
-	GeneratorPath   string
+	OutputPath      string
+
+	SpecTestName  string
+	GeneratorPath string
 }
 
 func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	dsc := newDescr()
+	dsc.OutputPath = *destination
+
 	if flag.NArg() != 1 {
 		usage()
-		log.Fatal("Expected exactly one argument")
+		log.Fatal("Expected exactly one arguments")
 	}
-
-	descr := &Descr{
-		ImportPath:    flag.Arg(0),
-		GeneratorPath: generator.ImportPath,
-	}
+	dsc.ImportPath = flag.Arg(0)
 
 	var err error
-	descr.Pkg, err = model.Parse(descr.ImportPath)
+	dsc.Pkg, err = model.Parse(dsc.ImportPath)
 	if err != nil {
 		log.Fatalf("Failed reading import path: %v", err)
 	}
@@ -58,14 +60,21 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed reading copyright file: %v", err)
 		}
-		descr.CopyrightHeader = string(header)
+		dsc.CopyrightHeader = string(header)
 	}
 
-	err = generate(descr, *destination)
+	err = generate(dsc)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+}
+
+func newDescr() *Descr {
+	return &Descr{
+		GeneratorPath: generator.ImportPath,
+		SpecTestName:  "TestXxx",
+	}
 }
 
 func usage() {

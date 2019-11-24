@@ -15,7 +15,7 @@ import (
 	"github.com/guzenok/go-sqltest/sample/postgres/migrations"
 )
 
-//go:generate go run github.com/kevinburke/go-bindata/go-bindata -o ./migrations/migrations.bindata.go -pkg migrations -ignore=\\*.go ./migrations/...
+//go:generate go run ../../sqlmockgen -out=sql_test.go -db=postgresql://postgres:postgres@localhost:5432/test?sslmode=disable .
 
 const (
 	actualVersion uint = 1550026905

@@ -12,6 +12,7 @@ type Descr struct {
 	ImportPath      string
 	Pkg             *model.Package
 	CopyrightHeader string
+	DbUrl           string
 	OutputPath      string
 
 	SpecTestFuncName string
@@ -62,7 +63,7 @@ func {{.SpecTestFuncName}}(t *testing.T) {
 	}
 
 	g := generator.New()
-	code, err := g.GenCode(t, inits, tests)
+	code, err := g.GenCode(t, {{printf "%q" .DbUrl}}, inits, tests)
 	if err != nil {
 		t.Fatal(err)
 	}

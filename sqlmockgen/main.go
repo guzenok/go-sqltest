@@ -15,14 +15,14 @@ const (
 that uses reflection to understand interfaces. It is enabled
 by passing non-flag arguments: an import path.
 Example:
-	sqlmockgen github.com/company/sql/driver
-
+	//go:generate sqlmockgen -out=sql_test.go -db=postgresql://postgres:postgres@localhost:5432/test?sslmode=disable .
 `
 )
 
 var (
-	destination   = flag.String("destination", "", "Output file; defaults to stdout.")
-	copyrightFile = flag.String("copyright_file", "", "Copyright file used to add copyright header")
+	url           = flag.String("db", "", "Real database url.")
+	out           = flag.String("out", "", "Output file; defaults to stdout.")
+	copyrightFile = flag.String("copyright", "", "Copyright file used to add copyright header.")
 )
 
 func main() {
@@ -30,11 +30,12 @@ func main() {
 	flag.Parse()
 
 	dsc := newDescr()
-	dsc.OutputPath = *destination
+	dsc.DbUrl = *url
+	dsc.OutputPath = *out
 
 	if flag.NArg() != 1 {
 		usage()
-		log.Fatal("Expected exactly one arguments")
+		log.Fatal("Expected exactly one arguments: import path")
 	}
 	dsc.ImportPath = flag.Arg(0)
 

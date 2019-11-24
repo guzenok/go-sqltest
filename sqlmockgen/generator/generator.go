@@ -20,7 +20,7 @@ type (
 	TestDbFunctions map[string]model.TestDbFunc
 
 	Generator interface {
-		GenCode(*testing.T, InitDbFunctions, TestDbFunctions) ([]byte, error)
+		GenCode(t *testing.T, dbUrl string, inits InitDbFunctions, tests TestDbFunctions) ([]byte, error)
 	}
 
 	generator struct {
@@ -37,12 +37,18 @@ func New() Generator {
 
 func (g *generator) GenCode(
 	t *testing.T,
+	dbUrl string,
 	inits InitDbFunctions,
 	tests TestDbFunctions,
 ) (
 	[]byte, error,
 ) {
+	g.imports()
 
+	return format.Source(g.buf.Bytes())
+}
+
+func (g *generator) imports() {
 	g.p("import (")
 	g.in()
 	for _, i := range imports {
@@ -50,8 +56,6 @@ func (g *generator) GenCode(
 	}
 	g.out()
 	g.p(")")
-
-	return format.Source(g.buf.Bytes())
 }
 
 func (g *generator) p(format string, args ...interface{}) {

@@ -37,8 +37,7 @@ type (
 	}
 
 	generator struct {
-		buf    *bytes.Buffer
-		indent string
+		buf *bytes.Buffer
 	}
 )
 
@@ -61,11 +60,11 @@ func (g *generator) GenCode(
 		t.Fatal(err)
 	}
 
-	for name, f := range tests {
+	for implFunc, f := range tests {
 		const pref = "Test"
-		testFunc := pref + name[len(pref):]
-		mockFunc := name + "Mock"
-		g.test(t, testFunc, mockFunc, name)
+		testFunc := pref + implFunc[len(pref):]
+		mockFunc := implFunc + "Mock"
+		g.test(t, testFunc, mockFunc, implFunc)
 		g.mock(t, dbUrl, mockFunc, db.Driver(), f)
 	}
 
@@ -88,7 +87,8 @@ func (g *generator) test(t *testing.T, name, mock, impl string) {
 	g.p("")
 }
 
-func (g *generator) mock(t *testing.T, dbUrl, name string, driver driver.Driver, f model.TestDbFunc) {
+func (g *generator) mock(t *testing.T,
+	dbUrl, name string, driver driver.Driver, f model.TestDbFunc) {
 	code := new(bytes.Buffer)
 	uid, _ := recorder.Wrap(driver, nil, code)
 	rec, err := sql.Open(uid, dbUrl)
@@ -118,25 +118,13 @@ func (g *generator) mock(t *testing.T, dbUrl, name string, driver driver.Driver,
 
 func (g *generator) imports() {
 	g.p("import (")
-	g.in()
 	for _, i := range imports {
 		g.p(`"%s"`, i)
 	}
-	g.out()
 	g.p(")")
 	g.p("")
 }
 
 func (g *generator) p(format string, args ...interface{}) {
-	fmt.Fprintf(g.buf, g.indent+format+"\n", args...)
-}
-
-func (g *generator) in() {
-	g.indent += "\t"
-}
-
-func (g *generator) out() {
-	if len(g.indent) > 0 {
-		g.indent = g.indent[0 : len(g.indent)-1]
-	}
+	fmt.Fprintf(g.buf, format+"\n", args...)
 }

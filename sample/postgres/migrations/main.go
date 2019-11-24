@@ -1,3 +1,0 @@
-package migrations
-
-//go:generate go run github.com/kevinburke/go-bindata/go-bindata -o ./migrations.bindata.go -pkg migrations -ignore=\\*.go ./...

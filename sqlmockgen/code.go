@@ -60,9 +60,9 @@ func {{.SpecTestFuncName}}(t *testing.T) {
 	}
 
 	g := generator.New()
-	code, err := g.GenCode(t, {{printf "%q" .DbUrl}}, {{.Pkg.Init}}, tests)
-	if err != nil {
-		t.Fatal(err)
+	code := g.GenCode(t, {{printf "%q" .DbUrl}}, {{.Pkg.Init}}, tests)
+	if t.Failed() {
+		return
 	}
 
 	f, close, err := generator.NewFile({{printf "%q" .OutputPath}})

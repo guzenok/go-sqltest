@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/guzenok/go-sqltest/sqlmockgen/generator"
 	"github.com/guzenok/go-sqltest/sqlmockgen/model"
 )
 
@@ -25,16 +24,6 @@ var (
 	destination   = flag.String("destination", "", "Output file; defaults to stdout.")
 	copyrightFile = flag.String("copyright_file", "", "Copyright file used to add copyright header")
 )
-
-type Descr struct {
-	ImportPath      string
-	Pkg             *model.Package
-	CopyrightHeader string
-	OutputPath      string
-
-	SpecTestName  string
-	GeneratorPath string
-}
 
 func main() {
 	flag.Usage = usage
@@ -68,13 +57,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-}
-
-func newDescr() *Descr {
-	return &Descr{
-		GeneratorPath: generator.ImportPath,
-		SpecTestName:  "TestXxx",
-	}
 }
 
 func usage() {

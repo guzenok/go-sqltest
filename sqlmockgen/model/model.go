@@ -3,6 +3,7 @@ package model
 
 import (
 	"database/sql"
+	"errors"
 	"go/importer"
 	"go/token"
 	"go/types"
@@ -13,20 +14,21 @@ import (
 )
 
 const (
-	thisPackage = "github.com/guzenok/go-sqltest/sqlmockgen/model"
-	compiler    = "source"
+	// ImportPath of current package.
+	ImportPath = "github.com/guzenok/go-sqltest/sqlmockgen/model"
+	compiler   = "source"
 )
 
 // Signiture agreement here.
 type (
-	InitDbFunc func(db *sql.DB) error
+	InitDbFunc func(dbUrl string) (*sql.DB, error)
 	TestDbFunc func(*testing.T, *sql.DB)
 )
 
 // Naming agreement here.
 const (
-	initDbFuncName   = "InitTestDb"
-	testDbFuncSuffix = "Test"
+	initDbFuncName   = "initTestDb"
+	testDbFuncPrefix = "test"
 )
 
 func Parse(path string) (model *Package, err error) {
@@ -55,7 +57,7 @@ func Parse(path string) (model *Package, err error) {
 	scope := pkg.Scope()
 	for _, name := range scope.Names() {
 		obj := scope.Lookup(name)
-		if !obj.Exported() {
+		if obj.Exported() {
 			continue
 		}
 
@@ -66,15 +68,23 @@ func Parse(path string) (model *Package, err error) {
 
 		if obj.Name() == initDbFuncName &&
 			types.AssignableTo(funcType, typeofInitDbFunc) {
-			model.Inits = append(model.Inits, name)
+			model.Init = name
 			continue
 		}
 
-		if strings.HasSuffix(obj.Name(), testDbFuncSuffix) &&
+		if strings.HasPrefix(obj.Name(), testDbFuncPrefix) &&
 			types.AssignableTo(funcType, typeofTestDbFunc) {
 			model.Tests = append(model.Tests, name)
 			continue
 		}
+	}
+
+	if model.Init == "" {
+		return nil, errors.New(initDbFuncName + " function not found")
+	}
+
+	if len(model.Tests) < 1 {
+		return nil, errors.New(testDbFuncPrefix + "* function not found")
 	}
 
 	return
@@ -84,7 +94,7 @@ func loadTypes(golang types.Importer) (
 	typeofInitDbFunc types.Type,
 	typeofTestDbFunc types.Type,
 ) {
-	pkg, err := golang.Import(thisPackage)
+	pkg, err := golang.Import(ImportPath)
 	if err != nil {
 		panic(err)
 	}

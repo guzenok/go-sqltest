@@ -10,18 +10,28 @@ import (
 	store "github.com/guzenok/go-sqltest/sample"
 )
 
-func InitTestDb(db *sql.DB) (err error) {
-	err = Migrate(db)
+func initTestDb(dbUrl string) (db *sql.DB, err error) {
+	db, err = sql.Open(driverName, dbUrl)
 	if err != nil {
 		return
 	}
 
+	err = Migrate(db)
+	if err != nil {
+		db.Close()
+		return
+	}
+
 	err = loadFixtures(db, "users")
+	if err != nil {
+		db.Close()
+		return
+	}
 
 	return
 }
 
-func StoreUsersTest(t *testing.T, db *sql.DB) {
+func testStoreUsers(t *testing.T, db *sql.DB) {
 	ctx := context.Background()
 	s := wrap(db)
 

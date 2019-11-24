@@ -17,12 +17,14 @@ type Descr struct {
 
 	SpecTestFuncName string
 	GeneratorPath    string
+	ModelPath        string
 }
 
 func newDescr() *Descr {
 	return &Descr{
 		GeneratorPath:    generator.ImportPath,
-		SpecTestFuncName: "TestXxx",
+		ModelPath:        model.ImportPath,
+		SpecTestFuncName: "TestGeneratorEntryPoint",
 	}
 }
 
@@ -45,25 +47,20 @@ import (
 	"testing"
 
 	generator {{printf "%q" .GeneratorPath}}
+	model {{printf "%q" .ModelPath}}
 )
 
 func {{.SpecTestFuncName}}(t *testing.T) {
 	const copyright = ` + "`{{.CopyrightHeader}}`" + `
-
-	inits := generator.InitDbFunctions{
-		{{range $_, $f := .Pkg.Inits}}
-			{{printf "%q" $f}}: {{$f}},
-		{{end}}
-	}
 	
-	tests := generator.TestDbFunctions{
+	tests := map[string]model.TestDbFunc{
 		{{range $_, $f := .Pkg.Tests}}
 			{{printf "%q" $f}}: {{$f}},
 		{{end}}
 	}
 
 	g := generator.New()
-	code, err := g.GenCode(t, {{printf "%q" .DbUrl}}, inits, tests)
+	code, err := g.GenCode(t, {{printf "%q" .DbUrl}}, {{.Pkg.Init}}, tests)
 	if err != nil {
 		t.Fatal(err)
 	}

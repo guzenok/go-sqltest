@@ -32,7 +32,7 @@ func TestStoreUsers(t *testing.T) {
 
 	setStoreUsersMock(mock)
 
-	StoreUsersTest(t, db)
+	testStoreUsers(t, db)
 }
 
 func setStoreUsersMock(mock sqlmock.Sqlmock) {
@@ -113,22 +113,17 @@ func TestGenerator(t *testing.T) {
 }
 
 func getStoreUsersMock(t *testing.T, out io.Writer) {
-	realDb, err := sql.Open(driverName, uri)
+	realDb, err := initTestDb(uri)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	defer realDb.Close()
-
-	err = InitTestDb(realDb)
-	if err != nil {
-		panic(err)
-	}
 
 	uid, _ := recorder.Wrap(realDb.Driver(), nil, out)
 	recDb, err := sql.Open(uid, uri)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
-	StoreUsersTest(t, recDb)
+	testStoreUsers(t, recDb)
 }

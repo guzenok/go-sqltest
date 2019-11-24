@@ -9,18 +9,23 @@ import (
 	"github.com/guzenok/go-sqltest/sqlmockgen/model"
 )
 
-const ImportPath = "github.com/guzenok/go-sqltest/sqlmockgen/generator"
+const (
+	// ImportPath of current package.
+	ImportPath = "github.com/guzenok/go-sqltest/sqlmockgen/generator"
+)
 
 var imports = []string{
 	"testing",
 }
 
 type (
-	InitDbFunctions map[string]model.InitDbFunc
-	TestDbFunctions map[string]model.TestDbFunc
-
 	Generator interface {
-		GenCode(t *testing.T, dbUrl string, inits InitDbFunctions, tests TestDbFunctions) ([]byte, error)
+		GenCode(
+			t *testing.T,
+			dbUrl string,
+			init model.InitDbFunc,
+			tests map[string]model.TestDbFunc,
+		) ([]byte, error)
 	}
 
 	generator struct {
@@ -38,8 +43,8 @@ func New() Generator {
 func (g *generator) GenCode(
 	t *testing.T,
 	dbUrl string,
-	inits InitDbFunctions,
-	tests TestDbFunctions,
+	init model.InitDbFunc,
+	tests map[string]model.TestDbFunc,
 ) (
 	[]byte, error,
 ) {

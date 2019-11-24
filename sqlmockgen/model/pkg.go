@@ -9,7 +9,7 @@ import (
 type Package struct {
 	SrcDir string
 	Name   string
-	Inits  []string
+	Init   string
 	Tests  []string
 }
 

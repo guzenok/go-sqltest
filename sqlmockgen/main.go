@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	usageText = `sqlmockgen generates mock interfaces by building a program
-that uses reflection to understand interfaces. It is enabled
-by passing non-flag arguments: an import path.
+	usageText = `sqlmockgen runs your tests on real db, records sql-traffic into sqlmock
+and makes your tests work without real db.
+Your test funcs should be: func testTESTNAME(*testing.T, *sql.DB){}.
+Your real db init func should be: func initTestDb(dbUrl string) (*sql.DB, error){}.
 Example:
 	//go:generate sqlmockgen -out=sql_test.go -db=postgresql://postgres:postgres@localhost:5432/test?sslmode=disable .
 `

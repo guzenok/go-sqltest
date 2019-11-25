@@ -53,17 +53,17 @@ func (g *generator) GenCode(
 	init model.InitDbFunc,
 	tests map[string]model.TestDbFunc,
 ) []byte {
-	g.imports()
-
 	db, err := init(dbUrl)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	g.imports()
+
 	for implFunc, f := range tests {
 		const pref = "Test"
 		testFunc := pref + implFunc[len(pref):]
-		mockFunc := implFunc + "Mock"
+		mockFunc := implFunc + "SqlMock"
 		g.test(t, testFunc, mockFunc, implFunc)
 		g.mock(t, dbUrl, mockFunc, db.Driver(), f)
 	}
@@ -87,8 +87,7 @@ func (g *generator) test(t *testing.T, name, mock, impl string) {
 	g.p("")
 }
 
-func (g *generator) mock(t *testing.T,
-	dbUrl, name string, driver driver.Driver, f model.TestDbFunc) {
+func (g *generator) mock(t *testing.T, dbUrl, name string, driver driver.Driver, f model.TestDbFunc) {
 	code := new(bytes.Buffer)
 	uid, _ := recorder.Wrap(driver, nil, code)
 	rec, err := sql.Open(uid, dbUrl)

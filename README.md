@@ -1,170 +1,99 @@
-gomock [![Build Status][travis-ci-badge]][travis-ci] [![GoDoc][godoc-badge]][godoc]
+sqltest [![Build Status][travis-ci-badge]][travis-ci]
 ======
 
-GoMock is a mocking framework for the [Go programming language][golang]. It
-integrates well with Go's built-in `testing` package, but can be used in other
-contexts too.
+SqlTest is a test code generator for the [Go programming language][golang].
+It runs your tests on real db, records sql-traffic into sqlmock
+and makes your tests work without real db.
 
 
 Installation
 ------------
 
 Once you have [installed Go][golang-install], run these commands
-to install the `gomock` package and the `mockgen` tool:
+to install the `sqlmockgen` tool:
 
-    go get github.com/golang/mock/gomock
-    go install github.com/golang/mock/mockgen
-
-
-Documentation
--------------
-
-After installing, you can use `go doc` to get documentation:
-
-    go doc github.com/golang/mock/gomock
-
-Alternatively, there is an online reference for the package hosted on GoPkgDoc
-[here][gomock-ref].
+    go get github.com/guzenok/go-sqltest
+    go install github.com/guzenok/go-sqltest/sqlmockgen
 
 
-Running mockgen
+Running sqlmockgen
 ---------------
 
-`mockgen` has two modes of operation: source and reflect.
-Source mode generates mock interfaces from a source file.
-It is enabled by using the -source flag. Other flags that
-may be useful in this mode are -imports and -aux_files.
+The `sqlmockgen` command is used to generate offline tests code according to you [special named](#Test-function-naming-agreement) test functions.
+It takes 1 argument:
+	
+ * absolute or relative import path of package to generate offline tests for;
+	
+and supports the following flags:
 
-Example:
+ *  `-out`: a file to which to write the resulting source code;
 
-	mockgen -source=foo.go [other options]
+ *  `-db`: a connection string to real db;
 
-Reflect mode generates mock interfaces by building a program
-that uses reflection to understand interfaces. It is enabled
-by passing two non-flag arguments: an import path, and a
-comma-separated list of symbols.
+ *  `-copyright`: copyright file used to add copyright header to the resulting source code;
 
-Example:
+Example for installed:
 
-	mockgen database/sql/driver Conn,Driver
+```sh
+sqlmockgen -out=sql_test.go -db=postgresql://postgres:postgres@localhost:5432/test?sslmode=disable .
+```
 
-The `mockgen` command is used to generate source code for a mock
-class given a Go source file containing interfaces to be mocked.
-It supports the following flags:
+Example for gotten:
 
- *  `-source`: A file containing interfaces to be mocked.
+```sh
+go run github.com/guzenok/go-sqltest/sqlmockgen -out=sql_test.go -db=postgresql://postgres:postgres@localhost:5432/test?sslmode=disable .
+```
+	
+Example for go generate:
 
- *  `-destination`: A file to which to write the resulting source code. If you
-    don't set this, the code is printed to standard output.
+```go
+//go:generate go run github.com/guzenok/go-sqltest/sqlmockgen -out=sql_test.go -db=postgresql://postgres:postgres@localhost:5432/test?sslmode=disable .
+```
 
- *  `-package`: The package to use for the resulting mock class
-    source code. If you don't set this, the package name is `mock_` concatenated
-    with the package of the input file.
-
- *  `-imports`: A list of explicit imports that should be used in the resulting
-    source code, specified as a comma-separated list of elements of the form
-    `foo=bar/baz`, where `bar/baz` is the package being imported and `foo` is
-    the identifier to use for the package in the generated source code.
-
- *  `-aux_files`: A list of additional files that should be consulted to
-    resolve e.g. embedded interfaces defined in a different file. This is
-    specified as a comma-separated list of elements of the form
-    `foo=bar/baz.go`, where `bar/baz.go` is the source file and `foo` is the
-    package name of that file used by the -source file.
-
-*  `-build_flags`: (reflect mode only) Flags passed verbatim to `go build`.
-
-* `-mock_names`: A list of custom names for generated mocks. This is specified 
-	as a comma-separated list of elements of the form
-	`Repository=MockSensorRepository,Endpoint=MockSensorEndpoint`, where 
-	`Repository` is the interface name and `MockSensorRepository` is the desired
-	mock name (mock factory method and mock recorder will be named after the mock).
-	If one of the interfaces has no custom name specified, then default naming
-	convention will be used.
-
-* `-copyright_file`: Copyright file used to add copyright header to the resulting source code.
-
-For an example of the use of `mockgen`, see the `sample/` directory. In simple
-cases, you will need only the `-source` flag.
+For an example of the `sqlmockgen` using, see the [sample/](./sample) directory.
 
 
-Building Mocks
+Test function naming agreement
 --------------
 
-```go
-type Foo interface {
-  Bar(x int) int
-}
+Your function for test db initialization (migrations, data fixtures, etc.) should be:
 
-func SUT(f Foo) {
- // ...
+```go
+func initTestDb(dbUrl string) (*sql.DB, error) {
+  // open connection and prepare data
 }
 
 ```
 
+Your test functions should be like:
+
 ```go
-func TestFoo(t *testing.T) {
-  ctrl := gomock.NewController(t)
+func test<TESTNAME>(*testing.T, *sql.DB) {
+  // test your code with db connection
+}
+```
+(with different \<TESTNAME\>)
 
-  // Assert that Bar() is invoked.
-  defer ctrl.Finish()
+Then sqlmockgen will generate go tests:
 
-  m := NewMockFoo(ctrl)
+```go
+func Test<TESTNAME>(*testing.T) {
+  db, err := test<TESTNAME>SqlMock()
+  if err != nil {
+    t.Fatal(err)
+  }
+  test<TESTNAME>(t, db)
+}
 
-  // Asserts that the first and only call to Bar() is passed 99.
-  // Anything else will fail.
-  m.
-    EXPECT().
-    Bar(gomock.Eq(99)).
-    Return(101)
-
-  SUT(m)
+func test<TESTNAME>SqlMock() (*sql.DB, error) {
+    // generated code here:
+    // offline go-sqlmock initialization.
 }
 ```
 
-Building Stubs
---------------
 
-```go
-type Foo interface {
-  Bar(x int) int
-}
-
-func SUT(f Foo) {
- // ...
-}
-
-```
-
-```go
-func TestFoo(t *testing.T) {
-  ctrl := gomock.NewController(t)
-  defer ctrl.Finish()
-
-  m := NewMockFoo(ctrl)
-
-  // Does not make any assertions. Returns 101 when Bar is invoked with 99.
-  m.
-    EXPECT().
-    Bar(gomock.Eq(99)).
-    Return(101).
-    AnyTimes()
-
-  // Does not make any assertions. Returns 103 when Bar is invoked with 101.
-  m.
-    EXPECT().
-    Bar(gomock.Eq(101)).
-    Return(103).
-    AnyTimes()
-
-  SUT(m)
-}
-```
 
 [golang]:          http://golang.org/
 [golang-install]:  http://golang.org/doc/install.html#releases
-[gomock-ref]:      http://godoc.org/github.com/golang/mock/gomock
-[travis-ci-badge]: https://travis-ci.org/golang/mock.svg?branch=master
-[travis-ci]:       https://travis-ci.org/golang/mock
-[godoc-badge]:     https://godoc.org/github.com/golang/mock/gomock?status.svg
-[godoc]:           https://godoc.org/github.com/golang/mock/gomock
+[travis-ci-badge]: https://travis-ci.org/guzenok/go-sqltest.svg?branch=master
+[travis-ci]:       https://travis-ci.org/guzenok/go-sqltest

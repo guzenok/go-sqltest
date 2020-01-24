@@ -10,13 +10,15 @@ import (
 )
 
 type rows struct {
-	cols []string
-	vals [][]driver.Value
+	cols      []string
+	vals      [][]driver.Value
+	origClose func() error
 }
 
 func parseRows(src driver.Rows) *rows {
 	dst := &rows{
-		cols: src.Columns(),
+		cols:      src.Columns(),
+		origClose: src.Close,
 	}
 
 	n := len(dst.cols)
@@ -62,6 +64,10 @@ func (rr *rows) Columns() []string {
 // Close closes the rows iterator.
 func (rr *rows) Close() error {
 	rr.vals = nil
+
+	if rr.origClose != nil {
+		return rr.origClose()
+	}
 	return nil
 }
 

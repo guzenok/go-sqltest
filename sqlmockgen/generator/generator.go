@@ -2,7 +2,6 @@ package generator
 
 import (
 	"bytes"
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"go/format"
@@ -20,7 +19,6 @@ const (
 var imports = []string{
 	"database/sql",
 	"database/sql/driver",
-	"errors",
 	"testing",
 	"time",
 	"github.com/DATA-DOG/go-sqlmock",
@@ -53,30 +51,44 @@ func (g *generator) GenCode(
 	init model.InitDbFunc,
 	tests map[string]model.TestDbFunc,
 ) []byte {
+
 	db, err := init(dbUrl)
 	if err != nil {
 		t.Fatal(err)
 	}
+	drv := db.Driver()
+	db.Close()
 
 	g.imports()
 
-	for implFunc, f := range tests {
-		const pref = "Test"
-		testFunc := pref + implFunc[len(pref):]
-		mockFunc := implFunc + "SqlMock"
-		g.test(t, testFunc, mockFunc, implFunc)
-		g.mock(t, dbUrl, mockFunc, db.Driver(), f)
+	const pref = "Test"
+	for impl, f := range tests {
+		test := pref + impl[len(pref):]
+		mock := impl + "SqlMock"
+
+		ok := t.Run(impl, func(t *testing.T) {
+			g.writeTestFunc(test, mock, impl)
+			g.writeMockFunc(t, dbUrl, mock, drv, f)
+		})
+		if !ok {
+			break
+		}
 	}
 
-	src, err := format.Source(g.buf.Bytes())
+	rawsrc := g.buf.Bytes()
+	if t.Failed() {
+		return rawsrc
+	}
+
+	src, err := format.Source(rawsrc)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
+		return rawsrc
 	}
-
 	return src
 }
 
-func (g *generator) test(t *testing.T, name, mock, impl string) {
+func (g *generator) writeTestFunc(name, mock, impl string) {
 	g.p("func %s(t *testing.T) {", name)
 	g.p("db, err := %s()", mock)
 	g.p("if err != nil {")
@@ -87,19 +99,16 @@ func (g *generator) test(t *testing.T, name, mock, impl string) {
 	g.p("")
 }
 
-func (g *generator) mock(t *testing.T, dbUrl, name string, driver driver.Driver, f model.TestDbFunc) {
+func (g *generator) writeMockFunc(t *testing.T, dbUrl, name string, drv driver.Driver, f model.TestDbFunc) {
 	code := new(bytes.Buffer)
-	uid, _ := recorder.Wrap(driver, nil, code)
-	rec, err := sql.Open(uid, dbUrl)
+
+	rec, err := recorder.Open(drv, dbUrl, nil, code)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer rec.Close()
 
 	f(t, rec)
-	if t.Failed() {
-		return
-	}
 
 	g.p("func %s() (*sql.DB, error) {", name)
 	g.p("opt := sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual)")

@@ -6,38 +6,38 @@ import (
 
 type tx struct {
 	orig driver.Tx
-	rec
+	*output
 }
 
 func (cn *conn) newTx(orig driver.Tx) *tx {
 	return &tx{
-		orig: orig,
-		rec:  cn.rec,
+		orig:   orig,
+		output: cn.output,
 	}
 }
 
 // Commit implements driver.Tx.
 func (tx *tx) Commit() error {
 	after := tx.mock.ExpectCommit()
-	tx.write("mock.ExpectCommit()")
+	tx.p("mock.ExpectCommit()")
 	err := tx.orig.Commit()
 	if err != nil {
 		after.WillReturnError(err)
-		tx.write(".WillReturnError(%s)", errToString(err))
+		tx.p(".WillReturnError(%s)", tx.errToString(err))
 	}
-	tx.write("\n")
+	tx.p("\n")
 	return err
 }
 
 // Rollback implements driver.Tx.
 func (tx *tx) Rollback() error {
 	after := tx.mock.ExpectRollback()
-	tx.write("mock.ExpectRollback()")
+	tx.p("mock.ExpectRollback()")
 	err := tx.orig.Rollback()
 	if err != nil {
 		after.WillReturnError(err)
-		tx.write(".WillReturnError(%s)", errToString(err))
+		tx.p(".WillReturnError(%s)", tx.errToString(err))
 	}
-	tx.write("\n")
+	tx.p("\n")
 	return err
 }

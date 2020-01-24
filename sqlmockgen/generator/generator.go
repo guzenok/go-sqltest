@@ -17,11 +17,9 @@ const (
 )
 
 var imports = []string{
-	"database/sql",
+
 	"database/sql/driver",
-	"testing",
 	"time",
-	"github.com/DATA-DOG/go-sqlmock",
 }
 
 type (
@@ -35,13 +33,15 @@ type (
 	}
 
 	generator struct {
-		buf *bytes.Buffer
+		imports recorder.ImportList
+		code    *bytes.Buffer
 	}
 )
 
 func New() Generator {
 	return &generator{
-		buf: new(bytes.Buffer),
+		imports: make(recorder.ImportList),
+		code:    new(bytes.Buffer),
 	}
 }
 
@@ -59,8 +59,6 @@ func (g *generator) GenCode(
 	drv := db.Driver()
 	db.Close()
 
-	g.imports()
-
 	const pref = "Test"
 	for impl, f := range tests {
 		test := pref + impl[len(pref):]
@@ -75,7 +73,8 @@ func (g *generator) GenCode(
 		}
 	}
 
-	rawsrc := g.buf.Bytes()
+	rawsrc := append(g.header(), g.body()...)
+
 	if t.Failed() {
 		return rawsrc
 	}
@@ -89,6 +88,8 @@ func (g *generator) GenCode(
 }
 
 func (g *generator) writeTestFunc(name, mock, impl string) {
+	g.i("testing")
+
 	g.p("func %s(t *testing.T) {", name)
 	g.p("db, err := %s()", mock)
 	g.p("if err != nil {")
@@ -100,15 +101,18 @@ func (g *generator) writeTestFunc(name, mock, impl string) {
 }
 
 func (g *generator) writeMockFunc(t *testing.T, dbUrl, name string, drv driver.Driver, f model.TestDbFunc) {
-	code := new(bytes.Buffer)
+	fcode := new(bytes.Buffer)
 
-	rec, err := recorder.Open(drv, dbUrl, nil, code)
+	rec, err := recorder.Open(drv, dbUrl, g.imports, fcode, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer rec.Close()
 
 	f(t, rec)
+
+	g.i("database/sql")
+	g.i("github.com/DATA-DOG/go-sqlmock")
 
 	g.p("func %s() (*sql.DB, error) {", name)
 	g.p("opt := sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual)")
@@ -117,22 +121,33 @@ func (g *generator) writeMockFunc(t *testing.T, dbUrl, name string, drv driver.D
 	g.p("  return nil, err")
 	g.p("}")
 	g.p("")
-	g.p(string(code.Bytes()))
+	g.p(string(fcode.Bytes()))
 	g.p("")
 	g.p("  return db, nil")
 	g.p("}")
 	g.p("")
 }
 
-func (g *generator) imports() {
-	g.p("import (")
-	for _, i := range imports {
-		g.p(`"%s"`, i)
+func (g *generator) header() []byte {
+	buf := new(bytes.Buffer)
+
+	buf.WriteString("import (\n")
+	for i := range g.imports {
+		fmt.Fprintf(buf, "%q\n", i)
 	}
-	g.p(")")
-	g.p("")
+	buf.WriteString(")\n")
+
+	return buf.Bytes()
+}
+
+func (g *generator) body() []byte {
+	return g.code.Bytes()
+}
+
+func (g *generator) i(pkg string) {
+	g.imports[pkg] = struct{}{}
 }
 
 func (g *generator) p(format string, args ...interface{}) {
-	fmt.Fprintf(g.buf, format+"\n", args...)
+	fmt.Fprintf(g.code, format+"\n", args...)
 }

@@ -10,22 +10,14 @@ import (
 // Driver wraps the database driver.
 type Driver struct {
 	orig driver.Driver
-	rec
+	*output
 }
 
 // newDriver is the wrap-recorder of original driver.
-func newDriver(orig driver.Driver, mock sqlmock.Sqlmock, out io.Writer) driver.Driver {
-	if mock == nil {
-		var err error
-		_, mock, err = sqlmock.New()
-		if err != nil {
-			panic(err)
-		}
-	}
-
+func newDriver(orig driver.Driver, imports ImportList, code io.Writer, mock sqlmock.Sqlmock) driver.Driver {
 	return &Driver{
-		orig: orig,
-		rec:  rec{out, mock},
+		orig:   orig,
+		output: newOutput(imports, code, mock),
 	}
 }
 

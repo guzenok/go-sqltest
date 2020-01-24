@@ -85,7 +85,7 @@ func migrations1550026905_baselineDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/1550026905_baseline.down.sql", size: 85, mode: os.FileMode(0644), modTime: time.Unix(1572089920, 0)}
+	info := bindataFileInfo{name: "migrations/1550026905_baseline.down.sql", size: 85, mode: os.FileMode(0644), modTime: time.Unix(1574745409, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x18, 0x8d, 0x22, 0xf8, 0x72, 0x6d, 0x9f, 0xaa, 0xf, 0x6b, 0x5a, 0xa2, 0xd5, 0xb5, 0xc2, 0xd8, 0x2b, 0x98, 0xef, 0x59, 0x34, 0x62, 0x39, 0x22, 0x9c, 0xed, 0x4d, 0xd8, 0x34, 0x3e, 0xf4, 0xf8}}
 	return a, nil
 }
@@ -105,7 +105,7 @@ func migrations1550026905_baselineUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/1550026905_baseline.up.sql", size: 516, mode: os.FileMode(0644), modTime: time.Unix(1572089990, 0)}
+	info := bindataFileInfo{name: "migrations/1550026905_baseline.up.sql", size: 516, mode: os.FileMode(0644), modTime: time.Unix(1574745409, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x2c, 0xb1, 0xa4, 0x57, 0xe, 0x93, 0xf6, 0x46, 0x4c, 0xaf, 0xb1, 0x86, 0xc2, 0x85, 0x3e, 0x91, 0xa8, 0x3f, 0xa9, 0x6d, 0xb3, 0xba, 0x33, 0xa2, 0x5, 0xa3, 0x27, 0xfa, 0x36, 0xba, 0xea, 0x7e}}
 	return a, nil
 }

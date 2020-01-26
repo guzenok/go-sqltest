@@ -62,7 +62,7 @@ func {{.SpecTestFuncName}}(t *testing.T) {
 	g := generator.New()
 	code := g.GenCode(t, {{printf "%q" .DbUrl}}, {{.Pkg.Init}}, tests)
 	if t.Failed() {
-		return
+		// return
 	}
 
 	f, close, err := generator.NewFile({{printf "%q" .OutputPath}})

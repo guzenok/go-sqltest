@@ -2,7 +2,6 @@ package generator
 
 import (
 	"bytes"
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"go/format"
@@ -18,12 +17,9 @@ const (
 )
 
 var imports = []string{
-	"database/sql",
+
 	"database/sql/driver",
-	"errors",
-	"testing",
 	"time",
-	"github.com/DATA-DOG/go-sqlmock",
 }
 
 type (
@@ -37,13 +33,15 @@ type (
 	}
 
 	generator struct {
-		buf *bytes.Buffer
+		imports recorder.ImportList
+		code    *bytes.Buffer
 	}
 )
 
 func New() Generator {
 	return &generator{
-		buf: new(bytes.Buffer),
+		imports: make(recorder.ImportList),
+		code:    new(bytes.Buffer),
 	}
 }
 
@@ -53,30 +51,45 @@ func (g *generator) GenCode(
 	init model.InitDbFunc,
 	tests map[string]model.TestDbFunc,
 ) []byte {
+
 	db, err := init(dbUrl)
 	if err != nil {
 		t.Fatal(err)
 	}
+	drv := db.Driver()
+	db.Close()
 
-	g.imports()
+	const pref = "Test"
+	for impl, f := range tests {
+		test := pref + impl[len(pref):]
+		mock := impl + "SqlMock"
 
-	for implFunc, f := range tests {
-		const pref = "Test"
-		testFunc := pref + implFunc[len(pref):]
-		mockFunc := implFunc + "SqlMock"
-		g.test(t, testFunc, mockFunc, implFunc)
-		g.mock(t, dbUrl, mockFunc, db.Driver(), f)
+		ok := t.Run(impl, func(t *testing.T) {
+			g.writeTestFunc(test, mock, impl)
+			g.writeMockFunc(t, dbUrl, mock, drv, f)
+		})
+		if !ok {
+			break
+		}
 	}
 
-	src, err := format.Source(g.buf.Bytes())
+	rawsrc := append(g.header(), g.body()...)
+
+	if t.Failed() {
+		return rawsrc
+	}
+
+	src, err := format.Source(rawsrc)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
+		return rawsrc
 	}
-
 	return src
 }
 
-func (g *generator) test(t *testing.T, name, mock, impl string) {
+func (g *generator) writeTestFunc(name, mock, impl string) {
+	g.i("testing")
+
 	g.p("func %s(t *testing.T) {", name)
 	g.p("db, err := %s()", mock)
 	g.p("if err != nil {")
@@ -87,19 +100,19 @@ func (g *generator) test(t *testing.T, name, mock, impl string) {
 	g.p("")
 }
 
-func (g *generator) mock(t *testing.T, dbUrl, name string, driver driver.Driver, f model.TestDbFunc) {
-	code := new(bytes.Buffer)
-	uid, _ := recorder.Wrap(driver, nil, code)
-	rec, err := sql.Open(uid, dbUrl)
+func (g *generator) writeMockFunc(t *testing.T, dbUrl, name string, drv driver.Driver, f model.TestDbFunc) {
+	fcode := new(bytes.Buffer)
+
+	rec, err := recorder.Open(drv, dbUrl, g.imports, fcode, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer rec.Close()
 
 	f(t, rec)
-	if t.Failed() {
-		return
-	}
+
+	g.i("database/sql")
+	g.i("github.com/DATA-DOG/go-sqlmock")
 
 	g.p("func %s() (*sql.DB, error) {", name)
 	g.p("opt := sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual)")
@@ -108,22 +121,33 @@ func (g *generator) mock(t *testing.T, dbUrl, name string, driver driver.Driver,
 	g.p("  return nil, err")
 	g.p("}")
 	g.p("")
-	g.p(string(code.Bytes()))
+	g.p(string(fcode.Bytes()))
 	g.p("")
 	g.p("  return db, nil")
 	g.p("}")
 	g.p("")
 }
 
-func (g *generator) imports() {
-	g.p("import (")
-	for _, i := range imports {
-		g.p(`"%s"`, i)
+func (g *generator) header() []byte {
+	buf := new(bytes.Buffer)
+
+	buf.WriteString("import (\n")
+	for i := range g.imports {
+		fmt.Fprintf(buf, "%q\n", i)
 	}
-	g.p(")")
-	g.p("")
+	buf.WriteString(")\n")
+
+	return buf.Bytes()
+}
+
+func (g *generator) body() []byte {
+	return g.code.Bytes()
+}
+
+func (g *generator) i(pkg string) {
+	g.imports[pkg] = struct{}{}
 }
 
 func (g *generator) p(format string, args ...interface{}) {
-	fmt.Fprintf(g.buf, format+"\n", args...)
+	fmt.Fprintf(g.code, format+"\n", args...)
 }

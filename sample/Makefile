@@ -1,16 +1,17 @@
-.PHONY: start stop sql
-
-start:
+.PHONY: db-start
+db-start:
 	docker run --rm -d \
 	    --name sqltest-db \
 	    --network host \
 	    -e POSTGRES_DB=test \
 	    postgres:9.5
 
-stop:
+.PHONY: db-stop
+db-stop:
 	docker stop \
 	    sqltest-db
 
+.PHONY: sql
 sql:
 	docker exec -ti \
 	    sqltest-db \

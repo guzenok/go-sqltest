@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"time"
 
@@ -98,8 +99,8 @@ func (out *output) valToString(v interface{}) string {
 }
 
 func (out *output) errToString(err error) string {
-	out.i("errors")
-	return fmt.Sprintf("errors.New(%#v)", err.Error())
+	out.i(reflect.TypeOf(err).Elem().PkgPath())
+	return fmt.Sprintf("%#v", err)
 }
 
 func (out *output) resultToString(res driver.Result) string {

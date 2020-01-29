@@ -5,7 +5,7 @@ example
 Codegeneration
 ------------
 
-Database is needed
+Database is needed:
 
 ```sh
 make db-start
@@ -17,7 +17,7 @@ make db-stop
 Test
 ---------------
 
-No database needed:
+Database is not needed, [go-sqlmock](https://github.com/DATA-DOG/go-sqlmock) instead:
 
 ```sh
 go test ./...

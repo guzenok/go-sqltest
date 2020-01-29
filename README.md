@@ -2,7 +2,7 @@ sqltest [![Build Status][travis-ci-badge]][travis-ci]
 ======
 
 SqlTest is a test code generator for the [Go programming language][golang].
-It runs your tests on real db, records sql-traffic into sqlmock
+It runs your tests on real db, records sql-traffic into [sqlmock][sqlmock]
 and makes your tests work without real db.
 
 
@@ -87,12 +87,12 @@ func Test<TESTNAME>(*testing.T) {
 
 func test<TESTNAME>SqlMock() (*sql.DB, error) {
     // generated code here:
-    // offline go-sqlmock initialization.
+    // github.com/DATA-DOG/go-sqlmock initialization.
 }
 ```
 
 
-
+[sqlmock]:         https://github.com/DATA-DOG/go-sqlmock
 [golang]:          http://golang.org/
 [golang-install]:  http://golang.org/doc/install.html#releases
 [travis-ci-badge]: https://travis-ci.org/guzenok/go-sqltest.svg?branch=master
